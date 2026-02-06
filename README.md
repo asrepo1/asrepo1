@@ -1,6 +1,23 @@
-# Anh Nguyen
+# Anh Quang Nguyen
 
-Palo Alto, CA
+Palo Alto, CA | [LinkedIn](https://linkedin.com/in/anhqnguyenm)
+
+---
+
+### Education
+
+**University of California, Los Angeles (UCLA)** — International Development Studies B.A., 2019
+
+---
+
+### Experience
+
+| Role | Company | Period |
+|------|---------|--------|
+| Product Lead & Developer | Aircloudy.co | Aug 2024 – Present |
+| Investment & Research Analyst | Independent | Jan 2022 – Jul 2024 |
+| Product & Technical Lead | Various Projects | Jan 2019 – Dec 2022 |
+| Growth Specialist | Rideshare Sector | Jun 2017 – Jun 2019 |
 
 ---
 
@@ -9,18 +26,12 @@ Palo Alto, CA
 | Project | Stack | Description |
 |---------|-------|-------------|
 | [Zone 5 HR Tracker](https://github.com/asrepo1/zone5-heart-rate-tracker) | Python, JS, Vercel | Apple Watch heart rate training visualizer with GitHub-style contribution graph |
-| Global Liquidity Index | TypeScript | Real-time global liquidity monitoring dashboard |
-| SUPost Monitor | Python, Claude API | Housing listing monitor with Telegram notifications |
-| Warehouse Inventory | Python, AI/CV | AI-powered home inventory system with camera tracking and barcode scanning |
-| Smart Trader Bot | Python | Automated trading bot |
 | [Solana Backtest](https://github.com/asrepo1/solana-backtest) | JavaScript | Solana backtesting and mock trading system |
 | [Hyperliquid SDK](https://github.com/asrepo1/hyperliquid-python-sdk) | Python | Python SDK for Hyperliquid API trading |
-| AirMDM K-12 | HTML, CSS, JS | AI-powered K-12 device management product site |
-| Google Ads Keyword Planner | Python | Keyword idea generation and analysis via Google Ads API |
-| Lambda Partner Signup | TypeScript | Partner registration flow |
 | [Apple Health Data](https://github.com/asrepo1/apple-health-data) | JavaScript | Daily Apple Health workout data pipeline |
-| DVC STEM Clone | HTML | Replica of dvcstem.com |
 
-### Tech
+---
 
-`Python` `TypeScript` `JavaScript` `Rust` `Swift` `HTML/CSS` `Vercel` `Claude API` `Solana` `Apple HealthKit`
+### Skills
+
+`Python` `Solidity` `SQL` `JavaScript/TypeScript` `React` `Next.js` `Vercel` `Git` `AWS` `Hugging Face` `LoRA Fine-Tuning` `Claude Code` `LLM APIs` `Excel` `Apple MDM` `Smart Contracts` `Figma`
