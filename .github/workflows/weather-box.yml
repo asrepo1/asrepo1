@@ -18,11 +18,16 @@ jobs:
           LAT=37.4529
           LON=-122.1817
 
-          DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles&forecast_days=5")
+          WEATHER_DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles&forecast_days=5")
+
+          AQI_DATA=$(curl -sf "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi&timezone=America/Los_Angeles")
 
           WEATHER=$(python3 -c "
           import json, sys
           from datetime import datetime
+
+          weather = json.loads(sys.argv[1])
+          aqi = json.loads(sys.argv[2])
 
           icons = {
             0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
@@ -31,54 +36,58 @@ jobs:
           }
           days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
-          data = json.load(sys.stdin)
-          d = data['daily']
-          h = data['hourly']
+          d = weather['daily']
+          h = weather['hourly']
 
-          # TZ env is set to America/Los_Angeles so now() returns Pacific time
-          # Open-Meteo hourly times are also in America/Los_Angeles
+          # AQI label
+          aqi_val = aqi.get('current', {}).get('us_aqi', None)
+          if aqi_val is not None:
+              if aqi_val <= 50: aqi_label = '🟢'
+              elif aqi_val <= 100: aqi_label = '🟡'
+              elif aqi_val <= 150: aqi_label = '🟠'
+              elif aqi_val <= 200: aqi_label = '🔴'
+              else: aqi_label = '🟣'
+          else:
+              aqi_val = '–'
+              aqi_label = '⚪'
+
+          # Hourly: next 6 hours
           now = datetime.now()
-
-          hour_idx = None
+          hour_idx = 0
           for i, t in enumerate(h['time']):
-              dt = datetime.strptime(t, '%Y-%m-%dT%H:%M')
-              if dt >= now:
+              if datetime.strptime(t, '%Y-%m-%dT%H:%M') >= now:
                   hour_idx = i
                   break
-          if hour_idx is None:
-              hour_idx = len(h['time']) - 6
 
           parts = []
           for i in range(hour_idx, min(hour_idx + 6, len(h['time']))):
               dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
               hr = dt.strftime('%I%p').lstrip('0').lower()
               temp = round(h['temperature_2m'][i])
-              code = h['weather_code'][i]
-              ic = icons.get(code, '?')
+              ic = icons.get(h['weather_code'][i], '?')
               parts.append(f'{hr} {ic} {temp}°')
-
           hourly_line = '  '.join(parts)
 
-          def rain_bar(pct):
-              filled = round(pct / 20)
-              return '▓' * filled + '░' * (5 - filled)
+          # Rain bar
+          def bar(pct):
+              f = round(pct / 20)
+              return '▓' * f + '░' * (5 - f)
 
+          # Daily: next 4 days
           day_lines = []
           for i in range(1, 5):
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
               day = days[dt.weekday()]
-              code = d['weather_code'][i]
-              ic = icons.get(code, '?')
+              ic = icons.get(d['weather_code'][i], '?')
               hi = round(d['temperature_2m_max'][i])
               lo = round(d['temperature_2m_min'][i])
               rain = d['precipitation_probability_max'][i] or 0
-              bar = rain_bar(rain)
-              day_lines.append(f'{day}  {ic} {hi}°/{lo}°  {bar} {rain:>2}%')
+              day_lines.append(f'{day}  {ic} {hi}°/{lo}°  {bar(rain)} {rain:>2}%')
 
-          print(hourly_line)
+          print(f'{hourly_line}  {aqi_label} AQI {aqi_val}')
           print('─' * 48)
           for l in day_lines:
               print(l)
-          " <<< "$DATA")
+          " "$WEATHER_DATA" "$AQI_DATA")
 
           gh gist edit "$GIST_ID" -f "weather.txt" - <<< "$WEATHER"
