@@ -76,4 +76,4 @@ jobs:
           print('\n'.join(lines))
           ")
 
-          gh gist edit "$GIST_ID" -f "📍 94025.txt" - <<< "$WEATHER"
+          gh gist edit "$GIST_ID" -f "weather.txt" - <<< "$WEATHER"
