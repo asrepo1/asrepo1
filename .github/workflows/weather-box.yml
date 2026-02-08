@@ -60,7 +60,7 @@ jobs:
                   break
 
           parts = []
-          for i in range(hour_idx, min(hour_idx + 6, len(h['time']))):
+          for i in range(hour_idx, min(hour_idx + 4, len(h['time']))):
               dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
               hr = dt.strftime('%I%p').lstrip('0').lower()
               temp = round(h['temperature_2m'][i])
@@ -73,7 +73,7 @@ jobs:
               f = round(pct / 20)
               return '▓' * f + '░' * (5 - f)
 
-          # Daily: next 4 days
+          # Daily: next 4 days, aligned columns
           day_lines = []
           for i in range(1, 5):
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
@@ -82,7 +82,7 @@ jobs:
               hi = round(d['temperature_2m_max'][i])
               lo = round(d['temperature_2m_min'][i])
               rain = d['precipitation_probability_max'][i] or 0
-              day_lines.append(f'{day}  {ic} {hi}°/{lo}°  {bar(rain)} {rain:>2}%')
+              day_lines.append(f'{day}  {ic} {hi:>3}°/{lo:>2}°  {bar(rain)} {rain:>3}%')
 
           print(f'{hourly_line}  {aqi_label} AQI {aqi_val}')
           for l in day_lines:
