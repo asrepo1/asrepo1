@@ -92,4 +92,4 @@ jobs:
               print(l)
           " "$WEATHER_DATA" "$AQI_DATA")
 
-          gh gist edit "$GIST_ID" -f "aircloudy.txt" - <<< "$WEATHER"
+          gh gist edit "$GIST_ID" -f "aircloudy" - <<< "$WEATHER"
