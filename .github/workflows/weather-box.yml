@@ -1,0 +1,21 @@
+name: Weather Box
+
+on:
+  schedule:
+    - cron: "0 */12 * * *" # Every 12 hours
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  update-gist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch weather and update gist
+        env:
+          GH_TOKEN: ${{ secrets.GH_GIST_TOKEN }}
+          GIST_ID: 8fc319438657e698472538bf19a91c1d
+        run: |
+          # Fetch Menlo Park weather from wttr.in (compact text, US units, no color)
+          WEATHER=$(curl -sf "wttr.in/Menlo+Park?u&1&Q&T&n" || echo "Weather unavailable")
+
+          # Update the gist
+          gh gist edit "$GIST_ID" -f weather.txt - <<< "$WEATHER"
