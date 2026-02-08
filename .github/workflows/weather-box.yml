@@ -14,49 +14,66 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_GIST_TOKEN }}
           GIST_ID: 8fc319438657e698472538bf19a91c1d
         run: |
-          # Menlo Park, CA coords
+          # 94025 = Menlo Park, CA
           LAT=37.4529
           LON=-122.1817
 
-          # Fetch 7-day forecast from Open-Meteo (free, no key)
-          DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=America/Los_Angeles&forecast_days=7")
+          # Fetch 7-day + current from Open-Meteo
+          DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles&forecast_days=7")
 
-          # Format as a clean text box
           WEATHER=$(echo "$DATA" | python3 -c "
           import json, sys
           from datetime import datetime
 
-          codes = {
-            0:'Clear',1:'Mostly Clear',2:'Partly Cloudy',3:'Overcast',
-            45:'Fog',48:'Fog',51:'Lt Drizzle',53:'Drizzle',55:'Hvy Drizzle',
-            61:'Lt Rain',63:'Rain',65:'Hvy Rain',71:'Lt Snow',73:'Snow',75:'Hvy Snow',
-            80:'Lt Showers',81:'Showers',82:'Hvy Showers',95:'T-Storm',96:'T-Storm',99:'T-Storm'
-          }
           icons = {
-            0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
+            0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
             61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌧',81:'🌧',82:'🌧',
             95:'⛈',96:'⛈',99:'⛈'
           }
-          days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+          labels = {
+            0:'Clear',1:'Clear',2:'Cloudy',3:'Overcast',
+            45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',
+            61:'Rain',63:'Rain',65:'Rain',71:'Snow',73:'Snow',75:'Snow',
+            80:'Showers',81:'Showers',82:'Showers',95:'Storm',96:'Storm',99:'Storm'
+          }
+          days = ['Mo','Tu','We','Th','Fr','Sa','Su']
 
-          d = json.load(sys.stdin)['daily']
-          lines = ['☀️ Menlo Park, CA — 7-Day Forecast','']
+          data = json.load(sys.stdin)
+          d = data['daily']
+          c = data['current']
+
+          # Rain bar: ░ for each 20%
+          def rain_bar(pct):
+              filled = round(pct / 20)
+              return '▓' * filled + '░' * (5 - filled)
+
+          # Current conditions
+          now_temp = round(c['temperature_2m'])
+          now_code = c['weather_code']
+          now_icon = icons.get(now_code, '🌡')
+          now_label = labels.get(now_code, '?')
+          now_time = datetime.now().strftime('%I:%M%p').lstrip('0').lower()
+
+          lines = []
+          lines.append(f'📍 94025 │ {now_icon} {now_temp}°F {now_label} │ {now_time}')
+          lines.append(f'───────┼──────────────┼──────────')
+
           for i in range(7):
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
               day = days[dt.weekday()]
-              date = dt.strftime('%b %d')
+              dd = dt.strftime('%d')
               code = d['weather_code'][i]
-              icon = icons.get(code,'🌡')
-              cond = codes.get(code,'???')
+              icon = icons.get(code, '🌡')
               hi = round(d['temperature_2m_max'][i])
               lo = round(d['temperature_2m_min'][i])
               rain = d['precipitation_probability_max'][i] or 0
-              lines.append(f'{icon} {day} {date}  {hi}°/{lo}°F  {cond}  💧{rain}%')
-          now = datetime.now().strftime('%b %d, %H:%M PT')
-          lines.append(f'')
-          lines.append(f'Updated {now}')
+              bar = rain_bar(rain)
+              lines.append(f'{day} {dd}  {icon} {hi:>3}°│{lo:>3}°  {bar} {rain:>2}%')
+
+          lines.append(f'───────┴──────────────┴──────────')
+          lines.append(f'        ▓▓▓▓▓ = 💧100%    ░░░░░ = 0%')
+
           print('\n'.join(lines))
           ")
 
-          # Update the gist
-          gh gist edit "$GIST_ID" -f weather.txt - <<< "$WEATHER"
+          gh gist edit "$GIST_ID" -f "📍 94025.txt" - <<< "$WEATHER"
