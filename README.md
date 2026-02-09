@@ -12,8 +12,8 @@ Product development, applied research, and protocol design across consumer techn
 
 UCLA, 2019
 
-- MITx 22.011 — Nuclear Energy: Science, Systems and Society
-- HarvardX — Fundamentals of Neuroscience
+- Nuclear Energy: Science, Systems and Society
+- Fundamentals of Neuroscience
 
 ---
 
