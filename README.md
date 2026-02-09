@@ -10,7 +10,7 @@ Product development, applied research, and protocol design across consumer techn
 
 ### Education
 
-**Winter 2026** — 22.011x Nuclear Energy: Science, Systems and Society · MCB80x Fundamentals of Neuroscience
+**Winter 2026** — 22.011x · MCB80x
 
 UCLA, 2019
 
