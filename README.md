@@ -1,14 +1,6 @@
 ### Skills
 
-**Languages** · `Python` `TypeScript` `JavaScript`
-
-**ML / AI** · `PyTorch` `Hugging Face` `LoRA` `Anthropic API` `Claude Code`
-
 **Neuro / BCI** · `EEG signal processing` `brain-computer interfaces` `motor imagery decoding`
-
-**Web** · `React` `Next.js` `Vercel` `Node.js`
-
-**Data & Infra** · `GitHub Actions` `REST APIs` `serverless` `SVG generation` `Apple Health pipelines`
 
 ---
 
