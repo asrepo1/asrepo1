@@ -22,8 +22,29 @@ jobs:
 
           AQI_DATA=$(curl -sf "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5,pm10,us_aqi&timezone=America/Los_Angeles&forecast_days=1")
 
-          # NASA MODIS NDVI satellite data (updates every 16 days)
-          NDVI_DATA=$(curl -sf --header 'Accept: application/json' "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=${LAT}&longitude=${LON}&startDate=A2025001&endDate=A2027001&kmAboveBelow=0&kmLeftRight=0&band=250m_16_days_NDVI" 2>/dev/null || echo '{}')
+          # NASA MODIS NDVI — fetch available dates, then get last 2
+          NDVI_DATES=$(curl -sf --max-time 10 --header 'Accept: application/json' \
+            "https://modis.ornl.gov/rst/api/v1/MOD13Q1/dates?latitude=${LAT}&longitude=${LON}" 2>/dev/null || echo '{"dates":[]}')
+
+          # Extract last 2 MODIS dates and fetch NDVI
+          NDVI_RANGE=$(python3 -c "
+          import json, sys
+          dates = json.loads(sys.argv[1]).get('dates', [])
+          if len(dates) >= 2:
+              print(dates[-2]['modis_date'] + ',' + dates[-1]['modis_date'])
+          elif len(dates) >= 1:
+              print(dates[-1]['modis_date'] + ',' + dates[-1]['modis_date'])
+          else:
+              print('')
+          " "$NDVI_DATES")
+
+          NDVI_DATA='{}'
+          if [ -n "$NDVI_RANGE" ]; then
+            START_D=$(echo "$NDVI_RANGE" | cut -d, -f1)
+            END_D=$(echo "$NDVI_RANGE" | cut -d, -f2)
+            NDVI_DATA=$(curl -sf --max-time 10 --header 'Accept: application/json' \
+              "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=${LAT}&longitude=${LON}&startDate=${START_D}&endDate=${END_D}&kmAboveBelow=0&kmLeftRight=0&band=250m_16_days_NDVI" 2>/dev/null || echo '{}')
+          fi
 
           WEATHER=$(python3 -c "
           import json, sys
@@ -64,10 +85,6 @@ jobs:
           if len(subsets) >= 2:
               ndvi_prev = subsets[-2]['data'][0] / 10000
 
-          # Canopy level: NDVI mapped to intuitive scale
-          # 0.0-0.1 = bare, 0.1-0.2 = sparse, 0.2-0.4 = light
-          # 0.4-0.6 = moderate, 0.6-0.8 = dense, 0.8+ = lush
-          canopy_pct = max(0, min(100, round(ndvi_val * 100)))
           if ndvi_val >= 0.6: canopy_dot = '🟢'
           elif ndvi_val >= 0.4: canopy_dot = '🟡'
           elif ndvi_val >= 0.2: canopy_dot = '🟠'
@@ -77,6 +94,9 @@ jobs:
           if delta > 0.02: trend = '↑'
           elif delta < -0.02: trend = '↓'
           else: trend = '→'
+
+          # Fallback if NDVI unavailable
+          ndvi_str = f'🌳{canopy_dot}{trend}' if ndvi_val > 0 else '🌳--'
 
           # --- AQI ---
           aq_h = aq.get('hourly', {})
@@ -101,7 +121,7 @@ jobs:
               ic = icons.get(h['weather_code'][i], '?')
               parts.append(f'{hr}{ic}')
           hourly_line = ' '.join(parts)
-          print(f'{hourly_line}  🌳{canopy_dot}{trend}')
+          print(f'{hourly_line}  {ndvi_str}')
 
           # Lines 2-5: daily with spaced icons
           def day_icons(day_str):
@@ -129,7 +149,8 @@ jobs:
 
           # Lines below fold (hidden from pinned preview)
           print()
-          print(f'🛰 NDVI {ndvi_val:.2f} ({ndvi_date}) {trend}')
+          ndvi_info = f'NDVI {ndvi_val:.2f} ({ndvi_date}) {trend}' if ndvi_val > 0 else 'NDVI unavailable'
+          print(f'🛰 {ndvi_info}')
           print(f'AQI {us_aqi} | PM2.5 {round(pm25)} | Wind {round(wind)} | Hum {round(humidity)}%')
           " "$WEATHER_DATA" "$AQI_DATA" "$NDVI_DATA")
 
