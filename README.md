@@ -8,15 +8,12 @@ Product development, applied research, and protocol design across consumer techn
 
 ---
 
-### Currently Learning
-
-Fusion energy systems, neuroscience
-
----
-
 ### Education
 
-**University of California, Los Angeles (UCLA)** — International Development Studies B.A., 2019
+UCLA, 2019
+
+- MITx 22.011 — Nuclear Energy: Science, Systems and Society
+- HarvardX — Fundamentals of Neuroscience
 
 ---
 
