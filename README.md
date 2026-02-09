@@ -2,7 +2,7 @@
 
 **Languages** · `Python` `TypeScript` `JavaScript`
 
-**ML / AI** · `PyTorch` `Hugging Face` `braindecode` `MNE-Python` `LoRA` `Anthropic API` `Claude Code`
+**ML / AI** · `PyTorch` `Hugging Face` `LoRA` `Anthropic API` `Claude Code`
 
 **Neuro / BCI** · `EEG signal processing` `brain-computer interfaces` `motor imagery decoding`
 
