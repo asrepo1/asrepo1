@@ -15,47 +15,33 @@ jobs:
           GIST_ID: 8fc319438657e698472538bf19a91c1d
           TZ: America/Los_Angeles
         run: |
-          LAT=37.4529
-          LON=-122.1817
+          LAT=37.4530
+          LON=-122.1819
 
-          WEATHER_DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles&forecast_days=5")
+          WEATHER_DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&hourly=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles&forecast_days=5")
 
-          AQI_DATA=$(curl -sf "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&current=us_aqi&timezone=America/Los_Angeles")
+          AQI_DATA=$(curl -sf "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5,pm10,us_aqi&timezone=America/Los_Angeles&forecast_days=1")
 
           WEATHER=$(python3 -c "
           import json, sys
           from datetime import datetime
 
           weather = json.loads(sys.argv[1])
-          aqi = json.loads(sys.argv[2])
+          aq = json.loads(sys.argv[2])
 
           icons = {
             0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
             61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌧',81:'🌧',82:'🌧',
             95:'⛈',96:'⛈',99:'⛈'
           }
-          # ☀ ☁ ⛅ ⛈ render as 1-cell wide in monospace; pad to match 2-cell emoji
           narrow = {'☀','☁','⛅','⛈'}
-          def ic_pad(ic):
+          def pad(ic):
               return ic + ' ' if ic in narrow else ic
           days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
           d = weather['daily']
           h = weather['hourly']
 
-          # AQI label
-          aqi_val = aqi.get('current', {}).get('us_aqi', None)
-          if aqi_val is not None:
-              if aqi_val <= 50: aqi_label = '🟢'
-              elif aqi_val <= 100: aqi_label = '🟡'
-              elif aqi_val <= 150: aqi_label = '🟠'
-              elif aqi_val <= 200: aqi_label = '🔴'
-              else: aqi_label = '🟣'
-          else:
-              aqi_val = '–'
-              aqi_label = '⚪'
-
-          # Hourly: icons only, fit ~8 hours + AQI in ~40 char width
           now = datetime.now()
           hour_idx = 0
           for i, t in enumerate(h['time']):
@@ -63,6 +49,44 @@ jobs:
                   hour_idx = i
                   break
 
+          # --- ACI (street-level canopy index) ---
+          aq_h = aq.get('hourly', {})
+          aq_times = aq_h.get('time', [])
+          aq_idx = 0
+          for i, t in enumerate(aq_times):
+              if datetime.strptime(t, '%Y-%m-%dT%H:%M') >= now:
+                  aq_idx = max(0, i - 1)
+                  break
+          def safe(arr, idx):
+              return (arr[min(idx, len(arr)-1)] if arr else 0) or 0
+          us_aqi = safe(aq_h.get('us_aqi',[]), aq_idx)
+          pm25 = safe(aq_h.get('pm2_5',[]), aq_idx)
+          pm10 = safe(aq_h.get('pm10',[]), aq_idx)
+          humidity = safe(h.get('relative_humidity_2m',[]), hour_idx)
+          wind = safe(h.get('wind_speed_10m',[]), hour_idx)
+          PM25_BP = [(0,9,0,50),(9.1,35.4,51,100),(35.5,55.4,101,150),(55.5,125.4,151,200),(125.5,225.4,201,300),(225.5,325.4,301,500)]
+          PM10_BP = [(0,54,0,50),(55,154,51,100),(155,254,101,150),(255,354,151,200),(355,424,201,300),(425,604,301,500)]
+          def epa(conc, bp):
+              for c_lo, c_hi, i_lo, i_hi in bp:
+                  if c_lo <= conc <= c_hi:
+                      return round(i_lo + (conc-c_lo)*(i_hi-i_lo)/(c_hi-c_lo))
+              return round(bp[-1][3])
+          pm25_adj = max(5, min(30, epa(pm25*1.5, PM25_BP) - epa(pm25, PM25_BP)))
+          pm10_adj = max(0, min(15, epa(pm10*1.3, PM10_BP) - epa(pm10, PM10_BP)))
+          humid_adj = min(20, round((humidity-85)*1.3)) if humidity > 85 else 0
+          if wind >= 15: wind_adj = -min(15, round((wind-10)*1.5))
+          elif wind < 3: wind_adj = 15
+          elif wind < 7: wind_adj = round(10-wind)
+          else: wind_adj = 0
+          aci = max(0, us_aqi + pm25_adj + pm10_adj + humid_adj + wind_adj)
+          if aci <= 50: aci_dot = '🟢'
+          elif aci <= 100: aci_dot = '🟡'
+          elif aci <= 150: aci_dot = '🟠'
+          elif aci <= 200: aci_dot = '🔴'
+          elif aci <= 300: aci_dot = '🟣'
+          else: aci_dot = '🟤'
+
+          # Line 1: hourly forecast + canopy indicator
           parts = []
           for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
               dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
@@ -70,37 +94,36 @@ jobs:
               ic = icons.get(h['weather_code'][i], '?')
               parts.append(f'{hr}{ic}')
           hourly_line = ' '.join(parts)
+          print(f'{hourly_line}  🌳{aci_dot}{aci}')
 
-          # Get hourly icons for a given day (every 3h: 6a,9a,12p,3p,6p,9p)
-          def day_hours(day_str):
-              sample_hours = [6, 9, 12, 15, 18, 21]
-              result = []
+          # Lines 2-5: daily with spaced icons
+          def day_icons(day_str):
+              sample = [6, 9, 12, 15, 18, 21]
+              r = []
               for j, t in enumerate(h['time']):
                   dt = datetime.strptime(t, '%Y-%m-%dT%H:%M')
-                  if dt.strftime('%Y-%m-%d') == day_str and dt.hour in sample_hours:
-                      result.append(icons.get(h['weather_code'][j], '?'))
-              return ''.join(result)
+                  if dt.strftime('%Y-%m-%d') == day_str and dt.hour in sample:
+                      r.append(pad(icons.get(h['weather_code'][j], '☁')))
+              return ' '.join(r)
 
-          # Daily: next 4 days with hourly progression + alerts
-          day_lines = []
           prev_hi = round(d['temperature_2m_max'][0])
           for i in range(1, 5):
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
               day = days[dt.weekday()]
-              hi = round(d['temperature_2m_max'][i])
-              hourly = day_hours(d['time'][i])
-              # Alert: temp drop >=5° or rain >50%
+              hi_t = round(d['temperature_2m_max'][i])
+              hourly = day_icons(d['time'][i])
               rain = d['precipitation_probability_max'][i] or 0
-              delta = hi - prev_hi
+              delta = hi_t - prev_hi
               alert = ''
               if delta <= -5: alert = ' 🔻'
               elif rain >= 50: alert = ' 🌊'
-              day_lines.append(f'{day} {hi:>2}° {hourly}{alert}')
-              prev_hi = hi
+              print(f'{day} {hi_t:>2}° {hourly}{alert}')
+              prev_hi = hi_t
 
-          print(f'{hourly_line}  {aqi_label}{aqi_val}')
-          for l in day_lines:
-              print(l)
+          # Line 6+: detailed breakdown (hidden from pinned preview)
+          print()
+          print(f'Canopy {aci} (AQI {us_aqi} + street {pm25_adj+pm10_adj} + hum {humid_adj} + wind {wind_adj})')
+          print(f'PM2.5 {round(pm25)} ug/m3 | Wind {round(wind)} mph | Humidity {round(humidity)}%')
           " "$WEATHER_DATA" "$AQI_DATA")
 
           gh gist edit "$GIST_ID" -f "aircloudy" - <<< "$WEATHER"
