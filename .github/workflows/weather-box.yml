@@ -203,6 +203,7 @@ jobs:
               return ' '.join(r)
 
           prev_hi = round(d['temperature_2m_max'][0])
+          shown_moon = set()
           for i in range(1, 5):
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
               day = days[dt.weekday()]
@@ -210,11 +211,13 @@ jobs:
               hourly = day_icons(d['time'][i])
               rain = d['precipitation_probability_max'][i] or 0
               delta_t = hi_t - prev_hi
-              alert = ''
-              if delta_t <= -5: alert = ' 🔻'
-              elif rain >= 50: alert = ' 🌊'
               moon = moon_phase(d['time'][i])
-              if moon: alert += moon
+              alert = ''
+              if moon and moon not in shown_moon:
+                  alert = ' ' + moon
+                  shown_moon.add(moon)
+              elif delta_t <= -5: alert = ' 🔻'
+              elif rain >= 50: alert = ' 🌊'
               print(f'{day} {hi_t:>2}° {hourly}{alert}')
               prev_hi = hi_t
 
