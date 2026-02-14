@@ -186,16 +186,15 @@ jobs:
           elif comfort >= 40: c_dot = '🟠'
           else: c_dot = '🔴'
 
-          # Line 1: time + temp + icon strip + comfort
+          # Line 1: time + icon strip + comfort
           dt_now = datetime.strptime(h['time'][hour_idx], '%Y-%m-%dT%H:%M')
           hr = dt_now.strftime('%I%p').lstrip('0').rstrip('M').lower()
-          cur_temp = round(safe(h.get('temperature_2m',[]), hour_idx))
           icons = []
-          for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
+          for i in range(hour_idx, min(hour_idx + 10, len(h['time']))):
               ic = nws_icon if (i == hour_idx and nws_icon) else get_icon(i)
               icons.append(ic)
           strip = ''.join(icons)
-          print(f'{hr} {cur_temp}° {strip} 🍃{c_dot}{comfort}')
+          print(f'{hr} {strip} 🍃{c_dot}{comfort}')
 
           # Lines 2-5: daily with spaced icons
           def day_icons(day_str):
