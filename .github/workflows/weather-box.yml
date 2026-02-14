@@ -189,9 +189,16 @@ jobs:
           # Line 1: time + icon strip + comfort
           dt_now = datetime.strptime(h['time'][hour_idx], '%Y-%m-%dT%H:%M')
           hr = dt_now.strftime('%I%p').lstrip('0').rstrip('M').lower()
+          sunset_str = d.get('sunset',[''])[0]
+          sunset_dt = datetime.strptime(sunset_str, '%Y-%m-%dT%H:%M') if sunset_str else None
           icons = []
           for i in range(hour_idx, min(hour_idx + 10, len(h['time']))):
               ic = nws_icon if (i == hour_idx and nws_icon) else get_icon(i)
+              # After sunset: show 🌙 unless precipitation
+              if sunset_dt:
+                  dt_h = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
+                  if dt_h >= sunset_dt and h['weather_code'][i] < 45:
+                      ic = '🌙'
               icons.append(ic)
           strip = ''.join(icons)
           print(f'{hr} {strip} 🍃{c_dot}{comfort}')
