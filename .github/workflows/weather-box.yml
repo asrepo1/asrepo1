@@ -188,14 +188,14 @@ jobs:
 
           # Line 1: hourly forecast + comfort index
           parts = []
-          for i in range(hour_idx, min(hour_idx + 7, len(h['time']))):
-              dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
+          for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
               ic = nws_icon if (i == hour_idx and nws_icon) else get_icon(i)
               if i == hour_idx:
+                  dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
                   hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
+                  parts.append(f'{hr}{ic}')
               else:
-                  hr = str(dt.hour % 12 or 12)
-              parts.append(f'{hr}{ic}')
+                  parts.append(ic)
           hourly_line = ' '.join(parts)
           print(f'{hourly_line} 🍃{c_dot}{comfort}')
 
@@ -226,7 +226,7 @@ jobs:
                   shown_moon.add(moon)
               elif delta_t <= -5: indicator = '🔻'
               elif rain >= 50: indicator = '🌊'
-              content = f'{day} {hi_t:>3}°  {hourly}'
+              content = f'{day} {hi_t:>2}° {hourly}'
               day_lines.append((content, indicator))
               prev_hi = hi_t
           max_cw = max(vw(c) for c, _ in day_lines)
