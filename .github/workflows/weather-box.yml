@@ -226,7 +226,7 @@ jobs:
                   shown_moon.add(moon)
               elif delta_t <= -5: indicator = '🔻'
               elif rain >= 50: indicator = '🌊'
-              content = f'{day} {hi_t:>2}° {hourly}'
+              content = f'{day} {hi_t:>3}°  {hourly}'
               day_lines.append((content, indicator))
               prev_hi = hi_t
           max_cw = max(vw(c) for c, _ in day_lines)
