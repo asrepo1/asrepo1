@@ -214,7 +214,8 @@ jobs:
               if delta_t <= -5: alert = ' 🔻'
               elif rain >= 50: alert = ' 🌊'
               moon = moon_phase(d['time'][i])
-              print(f'{day}{moon} {hi_t:>2}° {hourly}{alert}')
+              if moon: alert += moon
+              print(f'{day} {hi_t:>2}° {hourly}{alert}')
               prev_hi = hi_t
 
           # Lines below fold (hidden from pinned preview)
