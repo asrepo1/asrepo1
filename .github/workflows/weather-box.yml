@@ -68,6 +68,17 @@ jobs:
               cc = safe(h.get('cloud_cover', []), idx)
               return cloud_icon(cc)
 
+          # --- Moon phase for notable events ---
+          def moon_phase(date_str):
+              dt = datetime.strptime(date_str, '%Y-%m-%d')
+              ref = datetime(2000, 1, 6, 18, 14)  # known new moon
+              age = ((dt - ref).total_seconds() / 86400) % 29.530588853
+              if age < 1 or age > 28.53: return '🌑'
+              if 6.38 < age < 8.38: return '🌓'
+              if 13.27 < age < 15.27: return '🌕'
+              if 21.15 < age < 23.15: return '🌗'
+              return ''
+
           # --- Parse NWS observation for current hour (ground truth) ---
           nws_icon = None
           nws_desc = ''
@@ -202,7 +213,8 @@ jobs:
               alert = ''
               if delta_t <= -5: alert = ' 🔻'
               elif rain >= 50: alert = ' 🌊'
-              print(f'{day} {hi_t:>2}° {hourly}{alert}')
+              moon = moon_phase(d['time'][i])
+              print(f'{day}{moon} {hi_t:>2}° {hourly}{alert}')
               prev_hi = hi_t
 
           # Lines below fold (hidden from pinned preview)
