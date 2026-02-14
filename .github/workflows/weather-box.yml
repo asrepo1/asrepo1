@@ -98,6 +98,25 @@ jobs:
                   hour_idx = i
                   break
 
+          # --- Bias correction: adjust forecast cloud_cover using NWS ground truth ---
+          nws_pct = None
+          try:
+              if nws_icon and nws.get('properties', {}).get('cloudLayers'):
+                  nws_layers = nws['properties']['cloudLayers']
+                  nws_amts = {'CLR':0,'SKC':0,'FEW':12,'SCT':37,'BKN':68,'OVC':95}
+                  nws_pct = max(nws_amts.get(l.get('amount',''), 50) for l in nws_layers)
+          except: pass
+          if nws_pct is not None and h.get('cloud_cover'):
+              model_now = safe(h['cloud_cover'], hour_idx)
+              bias = model_now - nws_pct
+              if abs(bias) > 15:
+                  decay_rates = [0.90, 0.75, 0.55, 0.35, 0.15]
+                  for offset, decay in enumerate(decay_rates, 1):
+                      idx = hour_idx + offset
+                      if idx < len(h['cloud_cover']):
+                          correction = bias * decay
+                          h['cloud_cover'][idx] = max(0, min(100, round(h['cloud_cover'][idx] - correction)))
+
           # --- Canopy from Google Earth Engine Sentinel-2 ---
           ndvi_val = canopy.get('ndvi', 0)
           ndvi_prev = canopy.get('prev_ndvi', 0)
