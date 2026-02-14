@@ -188,10 +188,13 @@ jobs:
 
           # Line 1: hourly forecast + comfort index
           parts = []
-          for i in range(hour_idx, min(hour_idx + 6, len(h['time']))):
+          for i in range(hour_idx, min(hour_idx + 7, len(h['time']))):
               dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
-              hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
               ic = nws_icon if (i == hour_idx and nws_icon) else get_icon(i)
+              if i == hour_idx:
+                  hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
+              else:
+                  hr = str(dt.hour % 12 or 12)
               parts.append(f'{hr}{ic}')
           hourly_line = ' '.join(parts)
           print(f'{hourly_line} 🍃{c_dot}{comfort}')
