@@ -186,26 +186,34 @@ jobs:
           elif comfort >= 40: c_dot = '🟠'
           else: c_dot = '🔴'
 
-          # Line 1: time + icon strip + comfort
+          # Line 1: remaining daylight + 🌙 + tomorrow daytime + comfort
           dt_now = datetime.strptime(h['time'][hour_idx], '%Y-%m-%dT%H:%M')
           hr = dt_now.strftime('%I%p').lstrip('0').rstrip('M').lower()
           sunset_str = d.get('sunset',[''])[0]
           sunset_dt = datetime.strptime(sunset_str, '%Y-%m-%dT%H:%M') if sunset_str else None
-          icons = []
-          for i in range(hour_idx, min(hour_idx + 10, len(h['time']))):
+          today_ic = []
+          for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
+              dt_h = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
+              if sunset_dt and dt_h >= sunset_dt:
+                  break
               ic = nws_icon if (i == hour_idx and nws_icon) else get_icon(i)
-              # After sunset: show 🌙 unless precipitation
-              if sunset_dt:
-                  dt_h = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
-                  if dt_h >= sunset_dt and h['weather_code'][i] < 45:
-                      ic = '🌙'
-              icons.append(ic)
-          strip = ''.join(icons)
+              today_ic.append(ic)
+          tmrw = d['time'][1]
+          tmrw_hrs = [8, 10, 12, 14, 16]
+          max_t = max(3, 9 - len(today_ic))
+          tmrw_ic = []
+          for j, t in enumerate(h['time']):
+              dt_j = datetime.strptime(t, '%Y-%m-%dT%H:%M')
+              if dt_j.strftime('%Y-%m-%d') == tmrw and dt_j.hour in tmrw_hrs:
+                  tmrw_ic.append(get_icon(j))
+                  if len(tmrw_ic) >= max_t:
+                      break
+          strip = ''.join(today_ic) + '🌙' + ''.join(tmrw_ic)
           print(f'{hr} {strip} 🍃{c_dot}{comfort}')
 
-          # Lines 2-5: daily with spaced icons
+          # Lines 2-5: 4 daytime icons + hi/lo temp
           def day_icons(day_str):
-              sample = [6, 9, 12, 15, 18, 21]
+              sample = [9, 12, 15, 17]
               r = []
               for j, t in enumerate(h['time']):
                   dt = datetime.strptime(t, '%Y-%m-%dT%H:%M')
@@ -220,6 +228,7 @@ jobs:
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
               day = days[dt.weekday()]
               hi_t = round(d['temperature_2m_max'][i])
+              lo_t = round(d['temperature_2m_min'][i])
               hourly = day_icons(d['time'][i])
               rain = d['precipitation_probability_max'][i] or 0
               delta_t = hi_t - prev_hi
@@ -230,7 +239,7 @@ jobs:
                   shown_moon.add(moon)
               elif delta_t <= -5: indicator = '🔻'
               elif rain >= 50: indicator = '🌊'
-              content = f'{day} {hi_t:>2}° {hourly}'
+              content = f'{day} {hi_t}/{lo_t}° {hourly}'
               day_lines.append((content, indicator))
               prev_hi = hi_t
           max_cw = max(vw(c) for c, _ in day_lines)
