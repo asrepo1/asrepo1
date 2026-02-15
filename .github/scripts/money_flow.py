@@ -43,10 +43,17 @@ SECTORS = [
 
 POLY_KEYWORDS = ["fed", "tariff", "rate cut", "recession", "war",
                   "iran", "china", "strike", "economy", "inflation",
-                  "interest rate", "trade"]
+                  "interest rate", "trade", "ceasefire", "ukraine",
+                  "taiwan", "supreme court", "ipo", "greenland",
+                  "sanctions", "gdp", "debt", "treasury", "oil",
+                  "opec", "tax", "shutdown", "default"]
 POLY_SKIP = ["nba", "nfl", "premier league", "champions league", "fifa",
              "world cup", "la liga", "mvp", "deport", "dutch", "bitcoin",
-             "crypto", "nhl", "mlb", "serie a"]
+             "crypto", "nhl", "mlb", "serie a", "stranger things",
+             "gta", "oscars", "youtube", "views", "pikachu",
+             "olympics", "ice hockey", "nobel", "f1 driver",
+             "bad bunny", "opensea", "opinion fdv", "measles",
+             "australian open", "super bowl", "logan paul"]
 
 
 def fetch(url, headers=None, timeout=15):
@@ -337,10 +344,11 @@ def build_line3():
 # ────────────────────────────────────────
 def build_line4():
     markets = []
+    today = datetime.now().strftime("%Y-%m-%d")
 
     try:
         url = ("https://gamma-api.polymarket.com/events"
-               "?limit=50&active=true&closed=false&order=volume&ascending=false")
+               "?limit=100&active=true&closed=false&order=volume&ascending=false")
         events = fetch(url)
 
         for e in events:
@@ -361,6 +369,12 @@ def build_line4():
 
             # Use first market (primary) for the event
             m = event_markets[0]
+
+            # Skip expired events
+            end_date = m.get("endDate", "")
+            if end_date and end_date[:10] < today:
+                continue
+
             prices = m.get("outcomePrices", "[]")
             if isinstance(prices, str):
                 p = json.loads(prices)
@@ -375,6 +389,10 @@ def build_line4():
             except (ValueError, TypeError):
                 continue
 
+            # Skip near-resolved events (not interesting)
+            if prob < 5 or prob > 95:
+                continue
+
             # Build short label — pattern match known events first
             raw = event_title.split("?")[0].split("...")[0].strip()
             rl = raw.lower()
@@ -382,14 +400,30 @@ def build_line4():
                 short = "FedCh"
             elif "strike" in rl and "iran" in rl:
                 short = "Iran"
-            elif ("fed" in rl or "fomc" in rl) and ("rate" in rl or "decision" in rl or "interest" in rl or "decrease" in rl):
-                short = "RateCut"
+            elif "regime" in rl and "iran" in rl:
+                short = "IranReg"
+            elif "khamenei" in rl:
+                short = "Khamni"
+            elif ("fed" in rl or "fomc" in rl) and ("rate" in rl or "decision" in rl or "interest" in rl or "decrease" in rl or "cut" in rl):
+                short = "FedCut"
             elif "recession" in rl:
                 short = "Recsn"
+            elif "tariff" in rl and "supreme" in rl:
+                short = "SCTarf"
             elif "tariff" in rl:
                 short = "Tarif"
             elif "inflation" in rl:
                 short = "Infln"
+            elif "ceasefire" in rl or "ukraine" in rl:
+                short = "UkrPce"
+            elif "taiwan" in rl and ("china" in rl or "invade" in rl):
+                short = "Taiwan"
+            elif "greenland" in rl:
+                short = "Grnlnd"
+            elif "shutdown" in rl:
+                short = "Shtdwn"
+            elif "ipo" in rl:
+                short = "IPOs"
             elif "war" in rl or "conflict" in rl:
                 short = "War"
             else:
@@ -397,9 +431,9 @@ def build_line4():
                             "How many ", "What will ", "Who will "]:
                     raw = raw.replace(rm, "")
                 short = raw.replace("  ", " ").strip()
-                if len(short) > 12:
-                    words = short[:13].rsplit(" ", 1)
-                    short = words[0] if len(words) > 1 else short[:11]
+                if len(short) > 8:
+                    words = short[:9].rsplit(" ", 1)
+                    short = words[0] if len(words) > 1 else short[:7]
             full_q = m.get("question", event_title)
             markets.append({"short": f"{short} {prob:.0f}%",
                             "full": full_q, "prob": prob})
