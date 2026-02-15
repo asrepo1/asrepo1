@@ -146,6 +146,7 @@ jobs:
               return dt.hour > sunset_hour or (dt.hour == sunset_hour and dt.minute >= sunset_min) or dt.hour < sunrise_hour
           night_clear = {0,1,2}    # clear/partly cloudy - can see moon
           night_overcast = {3,45,48}  # overcast/fog - can't see moon
+          night_rain = {51,53,55}  # drizzle codes - use 🌧 not 🌦 (has sun)
 
           # Collect all sunrise/sunset datetimes from forecast
           sun_events = {}
@@ -201,6 +202,8 @@ jobs:
                       ic = moon_icon(dt)
                   elif is_night(dt) and wc in night_overcast:
                       ic = '🌫'
+                  elif is_night(dt) and wc in night_rain:
+                      ic = '🌧'
                   else:
                       ic = icons.get(wc, '?')
                   parts.append(f'{hr}{ic}')
@@ -219,6 +222,8 @@ jobs:
                           r.append(pad(moon_icon(dt)))
                       elif is_night(dt) and wc in night_overcast:
                           r.append(pad('🌫'))
+                      elif is_night(dt) and wc in night_rain:
+                          r.append(pad('🌧'))
                       else:
                           r.append(pad(icons.get(wc, '☁')))
               return ' '.join(r)
@@ -256,7 +261,8 @@ jobs:
           ndvi_chg = f'{delta:+.2f}' if ndvi_val > 0 else '--'
           print(f'🛰 NDVI {ndvi_num} ({ndvi_chg}) {trend} [{src}] {ndvi_date}')
           print(f'💨 AQI {us_aqi} | PM2.5 {round(pm25)} | PM10 {round(pm10)} ug/m3')
-          print(f'🌡 Feels {round(feels)}° | UV {round(uv,1)}/{round(uv_max,1)} | ☀ {sunrise}-{sunset}')
+          sun_lbl = moon_icon(now) if is_night(now) else '☀'
+          print(f'🌡 Feels {round(feels)}° | UV {round(uv,1)}/{round(uv_max,1)} | {sun_lbl} {sunrise}-{sunset}')
           print(f'💧 Hum {round(humidity)}% | Wind {round(wind)} mph')
           " "$WEATHER_DATA" "$AQI_DATA" "$NDVI_DATA")
 
