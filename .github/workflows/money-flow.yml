@@ -12,12 +12,16 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_GIST_TOKEN }}
       MONEY_GIST_ID: ${{ secrets.MONEY_GIST_ID }}
       FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install openai
 
       - name: Update Money Flow Gist
         run: python .github/scripts/money_flow.py --update

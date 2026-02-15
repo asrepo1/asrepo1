@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+import unicodedata
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -41,19 +42,28 @@ SECTORS = [
     ("XLF", "Fin"), ("XLV", "Hlth"),
 ]
 
-POLY_KEYWORDS = ["fed", "tariff", "rate cut", "recession", "war",
-                  "iran", "china", "strike", "economy", "inflation",
-                  "interest rate", "trade", "ceasefire", "ukraine",
-                  "taiwan", "supreme court", "ipo", "greenland",
-                  "sanctions", "gdp", "debt", "treasury", "oil",
-                  "opec", "tax", "shutdown", "default"]
+POLY_KEYWORDS = ["fed", "tariff", "rate", "recession", "economy",
+                  "inflation", "interest rate", "ipo",
+                  "gdp", "debt", "treasury", "tax", "shutdown",
+                  "ai model", "ai ", "largest company", "stock",
+                  "s&p", "earnings", "nvidia", "openai", "anthropic",
+                  "google", "apple", "microsoft", "semiconductor",
+                  "chip", "climate", "temperature"]
 POLY_SKIP = ["nba", "nfl", "premier league", "champions league", "fifa",
              "world cup", "la liga", "mvp", "deport", "dutch", "bitcoin",
              "crypto", "nhl", "mlb", "serie a", "stranger things",
              "gta", "oscars", "youtube", "views", "pikachu",
-             "olympics", "ice hockey", "nobel", "f1 driver",
-             "bad bunny", "opensea", "opinion fdv", "measles",
-             "australian open", "super bowl", "logan paul"]
+             "olympics", "ice hockey", "nobel", "f1 ", "bad bunny",
+             "opensea", "fdv", "measles", "australian open",
+             "super bowl", "logan paul", "war", "strike", "iran",
+             "ukraine", "ceasefire", "greenland", "khamenei",
+             "invade", "taiwan", "venezuela", "regime", "leader",
+             "putin", "xi jinping", "aliens", "moon land",
+             "ligue", "bundesliga", "europa", "nuggets", "mavericks",
+             "bucks", "sentinels", "lol:", "paris mayor", "senate",
+             "prime minister", "presidential", "silver", "gold",
+             "polymarket", "puffpaw", "backpack", "metamask",
+             "edgex", "hottest year", "weather"]
 
 
 def fetch(url, headers=None, timeout=15):
@@ -348,15 +358,18 @@ def build_line4():
 
     try:
         url = ("https://gamma-api.polymarket.com/events"
-               "?limit=100&active=true&closed=false&order=volume&ascending=false")
+               "?limit=200&active=true&closed=false&order=volume&ascending=false")
         events = fetch(url)
+    except Exception:
+        events = []
 
-        for e in events:
+    for e in events:
+        try:
             title_lower = e.get("title", "").lower()
             desc_lower = e.get("description", "").lower()
             search_text = title_lower + " " + desc_lower
 
-            # Skip non-financial events
+            # Skip non-relevant events
             if any(s in title_lower for s in POLY_SKIP):
                 continue
             if not any(k in search_text for k in POLY_KEYWORDS):
@@ -384,48 +397,45 @@ def build_line4():
             if not p or not p[0]:
                 continue
 
-            try:
-                prob = float(p[0]) * 100
-            except (ValueError, TypeError):
-                continue
+            prob = float(p[0]) * 100
 
             # Skip near-resolved events (not interesting)
-            if prob < 5 or prob > 95:
+            if prob < 10 or prob > 85:
                 continue
 
             # Build short label — pattern match known events first
             raw = event_title.split("?")[0].split("...")[0].strip()
             rl = raw.lower()
-            if "fed chair" in rl or ("nominate" in rl and "fed" in rl):
-                short = "FedCh"
-            elif "strike" in rl and "iran" in rl:
-                short = "Iran"
-            elif "regime" in rl and "iran" in rl:
-                short = "IranReg"
-            elif "khamenei" in rl:
-                short = "Khamni"
-            elif ("fed" in rl or "fomc" in rl) and ("rate" in rl or "decision" in rl or "interest" in rl or "decrease" in rl or "cut" in rl):
+            if ("fed" in rl or "fomc" in rl) and ("rate" in rl or "cut" in rl or "decrease" in rl or "interest" in rl):
                 short = "FedCut"
+            elif "fed chair" in rl or ("nominate" in rl and "fed" in rl):
+                short = "FedChr"
             elif "recession" in rl:
                 short = "Recsn"
             elif "tariff" in rl and "supreme" in rl:
                 short = "SCTarf"
+            elif "tariff" in rl and "revenue" in rl:
+                short = "TarRev"
             elif "tariff" in rl:
                 short = "Tarif"
             elif "inflation" in rl:
                 short = "Infln"
-            elif "ceasefire" in rl or "ukraine" in rl:
-                short = "UkrPce"
-            elif "taiwan" in rl and ("china" in rl or "invade" in rl):
-                short = "Taiwan"
-            elif "greenland" in rl:
-                short = "Grnlnd"
-            elif "shutdown" in rl:
-                short = "Shtdwn"
+            elif "ai model" in rl or "best ai" in rl:
+                short = "BestAI"
+            elif "largest company" in rl:
+                short = "BigCo"
             elif "ipo" in rl:
                 short = "IPOs"
-            elif "war" in rl or "conflict" in rl:
-                short = "War"
+            elif "shutdown" in rl:
+                short = "Shtdwn"
+            elif "tax" in rl:
+                short = "Tax"
+            elif "midterm" in rl:
+                short = "Midtrm"
+            elif "gdp" in rl:
+                short = "GDP"
+            elif "s&p" in rl or "sp500" in rl:
+                short = "SP500"
             else:
                 for rm in ["Will ", "the ", "Trump ", "United States ",
                             "How many ", "What will ", "Who will "]:
@@ -440,8 +450,8 @@ def build_line4():
 
             if len(markets) >= 3:
                 break
-    except Exception:
-        pass
+        except Exception:
+            continue
 
     if markets:
         while len(markets) < 3:
@@ -574,6 +584,193 @@ def build_line5(info):
 
 
 # ────────────────────────────────────────
+# AGENT: ITERATIVE PROMPT REFINEMENT
+# ────────────────────────────────────────
+AGENT_MODEL = "gpt-5.2"
+
+SYSTEM_PROMPT = """\
+You format financial market data into a pinned GitHub gist dashboard.
+
+HARD CONSTRAINTS (any violation = rejected):
+- Exactly 5 lines for the dashboard (before the blank line)
+- Each line MUST be ≤43 characters VISUAL width
+- Emoji = 2 chars visual width. │ = 1 char. All other chars = 1.
+- ZWJ emoji sequences (e.g. 😮‍💨) = 2 chars total visual width.
+- Each line starts with a specific emoji:
+  Line 1: 🟢 or 🟡 or 🔴 (regime dot — based on VIX level)
+  Line 2: 💸 (sector flows — show relative performance)
+  Line 3: 📋 (SEC filings — insider trades + Form D counts)
+  Line 4: ⚖ (Polymarket predictions — show probabilities)
+  Line 5: 💡 (signal synthesis — your sharp take)
+- Use │ as column separator (keeps monospace alignment)
+- After the 5 dashboard lines: one blank line, then 4-5 explanation lines
+- Explanation lines unpack the dashboard data for someone who clicks in
+- Do NOT add a timestamp — it gets appended automatically
+
+DATA ACCURACY (critical):
+- Use EXACT numbers from the provided data. Never invent or round aggressively.
+- Line 3 must include actual insider filing counts and Form D numbers from the data.
+- Line 4 must use the actual Polymarket short labels and probabilities.
+- If data says "AMD:2" for insider filings, show "AMD:2" — don't drop it.
+
+STYLE:
+- Be sharp and specific in Line 5 (synthesis). Not "markets mixed" but "semi leading, credit calm = lean into tech"
+- Explanation lines should tell the story: connect the dots between VIX, flows, filings, and predictions
+- Use abbreviations that fit: cntgo, bkwrd, liq, HY, 10Y, insdr, formD
+- The explanation section is where you add real insight — what does this combination of signals mean?
+
+OUTPUT: Only the gist content (5 dashboard lines + blank + explanations). Nothing else.\
+"""
+
+
+def visual_width(s):
+    """Calculate visual width: emoji=2, box-drawing=1, others=1."""
+    width = 0
+    i = 0
+    chars = list(s)
+    n = len(chars)
+    while i < n:
+        cp = ord(chars[i])
+        # Skip variation selectors and ZWJ (they don't add width)
+        if 0xFE00 <= cp <= 0xFE0F or cp == 0x200D:
+            i += 1
+            continue
+        # Emoji: check East Asian Width + common emoji ranges
+        cat = unicodedata.category(chars[i])
+        eaw = unicodedata.east_asian_width(chars[i])
+        if eaw in ('W', 'F'):
+            width += 2
+        elif cp > 0x1F000:
+            width += 2
+        elif cat == 'So' and cp > 0x2600:
+            width += 2
+        else:
+            width += 1
+        i += 1
+    return width
+
+
+def validate_gist_output(output):
+    """Validate gist formatting constraints. Returns list of errors (empty = valid)."""
+    errors = []
+    lines = output.split("\n")
+
+    # Find dashboard lines (before first blank line)
+    dashboard = []
+    blank_idx = None
+    for i, line in enumerate(lines):
+        if line.strip() == "":
+            blank_idx = i
+            break
+        dashboard.append(line)
+
+    if len(dashboard) != 5:
+        errors.append(f"Expected 5 dashboard lines, got {len(dashboard)}")
+
+    for i, line in enumerate(dashboard):
+        w = visual_width(line)
+        if w > 43:
+            errors.append(f"Line {i+1} is {w} chars wide (max 43): '{line}'")
+
+    # Check required emojis on correct lines
+    expected = {0: ["🟢", "🟡", "🔴"], 1: ["💸"], 2: ["📋"], 3: ["⚖"], 4: ["💡"]}
+    for idx, emojis in expected.items():
+        if idx < len(dashboard):
+            if not any(dashboard[idx].startswith(e) for e in emojis):
+                errors.append(f"Line {idx+1} must start with one of {emojis}")
+
+    if blank_idx is None:
+        errors.append("Missing blank line between dashboard and explanations")
+
+    return errors
+
+
+def agent_refine(raw_lines, raw_explains, info):
+    """Use GPT-5.2 to iteratively refine gist formatting."""
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+    except ImportError:
+        print("⚠ openai SDK not installed, using deterministic output")
+        return None
+
+    # Build data context for the model
+    data_context = json.dumps({
+        "vix": info.get("vix"),
+        "term_structure": info.get("struct"),
+        "credit": info.get("credit"),
+        "hy_spread": info.get("hy_spread"),
+        "m2": info.get("m2"),
+        "10y": info.get("10y"),
+        "flows": [(l, f"{r:+.1f}%") for l, r, _ in info.get("flows", [])],
+        "markets": [{"q": m.get("full", ""), "prob": m.get("prob", 0)}
+                    for m in info.get("markets", [])],
+    }, indent=2)
+
+    deterministic = "\n".join(raw_lines) + "\n\n" + "\n".join(raw_explains)
+
+    user_prompt = f"""Raw market data:
+{data_context}
+
+Current deterministic output (use as reference for data accuracy):
+{deterministic}
+
+Rewrite this dashboard. Rules:
+1. ALL numbers must come from the raw data or deterministic output — never invent.
+2. Lines 1-4: reformat for clarity/density but keep all key data points.
+3. Line 5: write a sharp, specific synthesis — connect the dots between signals.
+4. Explanations: tell the story. Why do these signals matter together?
+5. Every line must be ≤43 visual chars (emoji=2, │=1, all else=1)."""
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    for attempt in range(5):
+        try:
+            resp = client.chat.completions.create(
+                model=AGENT_MODEL,
+                messages=messages,
+                temperature=0.7,
+                max_completion_tokens=600,
+            )
+            output = resp.choices[0].message.content.strip()
+            # Strip markdown code fences if the model wraps output
+            if output.startswith("```"):
+                output = "\n".join(output.split("\n")[1:])
+            if output.endswith("```"):
+                output = "\n".join(output.split("\n")[:-1])
+            output = output.strip()
+
+            errors = validate_gist_output(output)
+            if not errors:
+                print(f"✓ Agent produced valid output on attempt {attempt + 1}")
+                return output
+
+            # Feed errors back for refinement
+            error_msg = "\n".join(errors)
+            print(f"  Agent attempt {attempt + 1}: {len(errors)} error(s)")
+            messages.append({"role": "assistant", "content": output})
+            messages.append({"role": "user", "content": (
+                f"Formatting errors found:\n{error_msg}\n\n"
+                "Fix these errors. Each dashboard line must be ≤43 visual chars "
+                "(emoji=2, │=1, others=1). Output ONLY the corrected gist content."
+            )})
+
+        except Exception as e:
+            print(f"  Agent attempt {attempt + 1} error: {e}")
+            break
+
+    print("⚠ Agent failed after 5 attempts, using deterministic output")
+    return None
+
+
+# ────────────────────────────────────────
 # MAIN
 # ────────────────────────────────────────
 def update_gist(content):
@@ -621,12 +818,19 @@ def main():
         lines.append("💡 insufficient data")
         explains.append(f"💡 signal error: {e}")
 
-    # Compose: lines 1-5, blank, lines 7-11 (explanations)
-    content = "\n".join(lines) + "\n\n" + "\n".join(explains)
+    # Try agent refinement, fall back to deterministic
+    agent_output = agent_refine(lines, explains, info)
+
+    if agent_output:
+        content = agent_output
+        source = "agent"
+    else:
+        content = "\n".join(lines) + "\n\n" + "\n".join(explains)
+        source = "deterministic"
 
     # Timestamp
     now = datetime.now(PT)
-    content += f"\n\n⏱ {now.strftime('%b %d %I:%M%p PT')}"
+    content += f"\n\n⏱ {now.strftime('%b %d %I:%M%p PT')} [{source}]"
 
     print(content)
 
