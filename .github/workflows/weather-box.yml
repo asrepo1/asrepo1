@@ -39,13 +39,10 @@ jobs:
           canopy = json.loads(sys.argv[3])
 
           icons = {
-            0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
+            0:'☀️',1:'🌤',2:'⛅️',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
             61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌧',81:'🌧',82:'🌧',
-            95:'⛈',96:'⛈',99:'⛈'
+            95:'⛈️',96:'⛈️',99:'⛈️'
           }
-          narrow = {'☀','☁','⛅','⛈'}
-          def pad(ic):
-              return ic + ' ' if ic in narrow else ic
           def moon_icon(date_str):
               dt = datetime.strptime(date_str, '%Y-%m-%d') if isinstance(date_str, str) else date_str
               ref = datetime(2000, 1, 6, 18, 14)
@@ -219,13 +216,13 @@ jobs:
                   if dt.strftime('%Y-%m-%d') == day_str and dt.hour in sample:
                       wc = h['weather_code'][j]
                       if is_night(dt) and wc in night_clear:
-                          r.append(pad(moon_icon(dt)))
+                          r.append(moon_icon(dt))
                       elif is_night(dt) and wc in night_overcast:
-                          r.append(pad('🌫'))
+                          r.append('🌫')
                       elif is_night(dt) and wc in night_rain:
-                          r.append(pad('🌧'))
+                          r.append('🌧')
                       else:
-                          r.append(pad(icons.get(wc, '☁')))
+                          r.append(icons.get(wc, '☁️'))
               return ' '.join(r)
 
           prev_hi = round(d['temperature_2m_max'][0])
