@@ -101,37 +101,51 @@ def get_memory():
 
 
 def save_memory(memory):
-    """Save agent memory to data gist."""
-    import tempfile
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-        json.dump(memory, f, indent=2)
-        tmppath = f.name
-    for attempt in range(3):
-        result = subprocess.run(
-            ["gh", "gist", "edit", DATA_GIST_ID, "-f", f"agent_memory.json={tmppath}"],
-            capture_output=True, text=True, timeout=15
-        )
-        if result.returncode == 0:
-            os.unlink(tmppath)
-            return
-    os.unlink(tmppath)
+    """Save agent memory to data gist via GitHub API."""
+    payload = json.dumps({
+        "files": {"agent_memory.json": {"content": json.dumps(memory, indent=2)}}
+    }).encode()
+    token = os.environ.get("GH_TOKEN", "")
+    req = urllib.request.Request(
+        f"https://api.github.com/gists/{DATA_GIST_ID}",
+        data=payload,
+        headers={
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+        },
+        method="PATCH",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+        print("Memory gist updated.", file=sys.stderr)
+    except Exception as e:
+        print(f"Memory gist update failed: {e}", file=sys.stderr)
 
 
 def update_content_gist(content):
-    """Update the visible pinned gist."""
-    import tempfile
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
-        f.write(content)
-        tmppath = f.name
-    for attempt in range(3):
-        result = subprocess.run(
-            ["gh", "gist", "edit", CONTENT_GIST_ID, "-f", f"⠀={tmppath}"],
-            capture_output=True, text=True, timeout=15
-        )
-        if result.returncode == 0:
-            os.unlink(tmppath)
-            return
-    os.unlink(tmppath)
+    """Update the visible pinned gist via GitHub API."""
+    payload = json.dumps({
+        "files": {"⠀": {"content": content}}
+    }).encode()
+    token = os.environ.get("GH_TOKEN", "")
+    req = urllib.request.Request(
+        f"https://api.github.com/gists/{CONTENT_GIST_ID}",
+        data=payload,
+        headers={
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+        },
+        method="PATCH",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp.read()
+        print("Content gist updated.", file=sys.stderr)
+    except Exception as e:
+        print(f"Content gist update failed: {e}", file=sys.stderr)
 
 
 def call_claude(access_token, system_prompt, user_prompt):
