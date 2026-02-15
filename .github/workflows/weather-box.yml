@@ -147,20 +147,56 @@ jobs:
           night_clear = {0,1,2}    # clear/partly cloudy - can see moon
           night_overcast = {3,45,48}  # overcast/fog - can't see moon
 
+          # Collect all sunrise/sunset datetimes from forecast
+          sun_events = {}
+          for i in range(len(d['time'])):
+              sr = d.get('sunrise',[])[i] if i < len(d.get('sunrise',[])) else None
+              ss = d.get('sunset',[])[i] if i < len(d.get('sunset',[])) else None
+              if sr:
+                  sr_dt = datetime.strptime(sr, '%Y-%m-%dT%H:%M')
+                  sun_events[sr_dt.strftime('%Y-%m-%d-%H')] = ('🌅', sr_dt)
+              if ss:
+                  ss_dt = datetime.strptime(ss, '%Y-%m-%dT%H:%M')
+                  sun_events[ss_dt.strftime('%Y-%m-%d-%H')] = ('🌇', ss_dt)
+
           # Line 1: hourly forecast + NDVI
           parts = []
+          skip_hours = set()
+          # Find which hours to skip (closest hour to each sun event in range)
+          hour_times = []
           for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
+              hour_times.append((i, datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')))
+          for key, (icon, ev_dt) in sun_events.items():
+              for idx, (i, ht) in enumerate(hour_times):
+                  diff = abs((ev_dt - ht).total_seconds()) / 3600
+                  if diff < 1:
+                      # This sun event falls in this hour's window
+                      # Skip the nearest rounded hour if it's close
+                      if ev_dt.minute >= 30 and idx + 1 < len(hour_times):
+                          skip_hours.add(hour_times[idx + 1][0])
+                      break
+
+          for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
+              if i in skip_hours:
+                  continue
               dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
-              hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
-              wc = h['weather_code'][i]
-              if is_night(dt) and wc in night_clear:
-                  ic = moon_icon(dt)
-              elif is_night(dt) and wc in night_overcast:
-                  ic = '🌫'
+              # Check if a sun event falls in this hour
+              key = dt.strftime('%Y-%m-%d-%H')
+              if key in sun_events:
+                  ev_icon, ev_dt = sun_events[key]
+                  ev_hr = ev_dt.strftime('%I:%M%p').lstrip('0').rstrip('M').lower()
+                  parts.append(f'{ev_hr}{ev_icon}')
               else:
-                  ic = icons.get(wc, '?')
-              parts.append(f'{hr}{ic}')
-          hourly_line = ' '.join(parts)
+                  hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
+                  wc = h['weather_code'][i]
+                  if is_night(dt) and wc in night_clear:
+                      ic = moon_icon(dt)
+                  elif is_night(dt) and wc in night_overcast:
+                      ic = '🌫'
+                  else:
+                      ic = icons.get(wc, '?')
+                  parts.append(f'{hr}{ic}')
+          hourly_line = ' '.join(parts[:8])
           print(f'{hourly_line}  {ndvi_str}')
 
           # Lines 2-5: daily with spaced icons
