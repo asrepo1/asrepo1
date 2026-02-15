@@ -138,9 +138,12 @@ jobs:
           elif comfort >= 40: c_dot = '🟠'
           else: c_dot = '🔴'
 
-          # Parse today's sunset for night detection
+          # Parse sunrise/sunset for night detection
+          sunrise_hour = int(sunrise.split(':')[0]) if sunrise else 7
           sunset_hour = int(sunset.split(':')[0]) if sunset else 20
           sunset_min = int(sunset.split(':')[1]) if sunset else 0
+          def is_night(dt):
+              return dt.hour > sunset_hour or (dt.hour == sunset_hour and dt.minute >= sunset_min) or dt.hour < sunrise_hour
           night_clear = {0,1,2}    # clear/partly cloudy - can see moon
           night_overcast = {3,45,48}  # overcast/fog - can't see moon
 
@@ -150,10 +153,9 @@ jobs:
               dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
               hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
               wc = h['weather_code'][i]
-              is_night = dt.hour > sunset_hour or (dt.hour == sunset_hour and dt.minute >= sunset_min)
-              if is_night and wc in night_clear:
+              if is_night(dt) and wc in night_clear:
                   ic = moon_icon(dt)
-              elif is_night and wc in night_overcast:
+              elif is_night(dt) and wc in night_overcast:
                   ic = '🌫'
               else:
                   ic = icons.get(wc, '?')
@@ -169,9 +171,9 @@ jobs:
                   dt = datetime.strptime(t, '%Y-%m-%dT%H:%M')
                   if dt.strftime('%Y-%m-%d') == day_str and dt.hour in sample:
                       wc = h['weather_code'][j]
-                      if dt.hour >= sunset_hour and wc in night_clear:
+                      if is_night(dt) and wc in night_clear:
                           r.append(pad(moon_icon(dt)))
-                      elif dt.hour >= sunset_hour and wc in night_overcast:
+                      elif is_night(dt) and wc in night_overcast:
                           r.append(pad('🌫'))
                       else:
                           r.append(pad(icons.get(wc, '☁')))
