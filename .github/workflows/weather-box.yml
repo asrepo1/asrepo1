@@ -185,7 +185,9 @@ jobs:
               if key in sun_events:
                   ev_icon, ev_dt = sun_events[key]
                   ev_hr = ev_dt.strftime('%I:%M%p').lstrip('0').rstrip('M').lower()
-                  parts.append(f'{ev_hr}{ev_icon}')
+                  wc = h['weather_code'][i]
+                  ic = icons.get(wc, '?')
+                  parts.append(f'{ev_hr}{ic}')
               else:
                   hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
                   wc = h['weather_code'][i]
