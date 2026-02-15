@@ -23,12 +23,9 @@ jobs:
           LAT: "37.44783"
           LON: "-122.13604"
         run: |
-          WEATHER_DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max&hourly=temperature_2m,weather_code,cloud_cover,relative_humidity_2m,wind_speed_10m,apparent_temperature,uv_index&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles&forecast_days=5")
+          WEATHER_DATA=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max&hourly=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,apparent_temperature,uv_index&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America/Los_Angeles&forecast_days=5")
 
           AQI_DATA=$(curl -sf "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${LAT}&longitude=${LON}&hourly=pm2_5,pm10,us_aqi&timezone=America/Los_Angeles&forecast_days=1")
-
-          # NWS actual observation from Palo Alto Airport (ground truth for current hour)
-          NWS_DATA=$(curl -sf -H "User-Agent: weather-gist" "https://api.weather.gov/stations/KPAO/observations/latest" || echo '{}')
 
           # Sentinel-2 NDVI via Google Earth Engine (10m resolution)
           NDVI_DATA=$(python3 .github/scripts/canopy.py 2>/dev/null || echo '{"ndvi":0,"prev_ndvi":0,"date":""}')
@@ -40,67 +37,15 @@ jobs:
           weather = json.loads(sys.argv[1])
           aq = json.loads(sys.argv[2])
           canopy = json.loads(sys.argv[3])
-          nws = json.loads(sys.argv[4])
 
-          # --- Icon system: cloud_cover % for clear/cloudy, WMO codes for precip ---
-          precip_icons = {
-            45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
-            61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',
-            80:'🌧',81:'🌧',82:'🌧',95:'⛈\uFE0F',96:'⛈\uFE0F',99:'⛈\uFE0F'
+          icons = {
+            0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌦',
+            61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌧',81:'🌧',82:'🌧',
+            95:'⛈',96:'⛈',99:'⛈'
           }
-          def cloud_icon(pct):
-              if pct <= 10: return '☀\uFE0F'
-              if pct <= 25: return '🌤'
-              if pct <= 50: return '⛅\uFE0F'
-              if pct <= 85: return '🌥'
-              return '☁\uFE0F'
-
-          def vw(s):
-              w = 0
-              for c in s:
-                  cp = ord(c)
-                  if cp == 0xFE0F: continue
-                  w += 2 if (cp >= 0x1F300 or cp in (0x2600,0x2601,0x26C5,0x26C8)) else 1
-              return w
-          def safe(arr, idx):
-              return (arr[min(idx, len(arr)-1)] if arr else 0) or 0
-
-          def get_icon(idx):
-              wc = h['weather_code'][idx]
-              if wc >= 45:
-                  return precip_icons.get(wc, '🌧')
-              cc = safe(h.get('cloud_cover', []), idx)
-              return cloud_icon(cc)
-
-          # --- Moon phase for notable events ---
-          def moon_phase(date_str):
-              dt = datetime.strptime(date_str, '%Y-%m-%d')
-              ref = datetime(2000, 1, 6, 18, 14)  # known new moon
-              age = ((dt - ref).total_seconds() / 86400) % 29.530588853
-              if age < 1 or age > 28.53: return '🌑'
-              if 6.38 < age < 8.38: return '🌓'
-              if 13.27 < age < 15.27: return '🌕'
-              if 21.15 < age < 23.15: return '🌗'
-              return ''
-
-          # --- Parse NWS observation for current hour (ground truth) ---
-          nws_icon = None
-          nws_desc = ''
-          try:
-              props = nws.get('properties', {})
-              nws_desc = (props.get('textDescription', '') or '')
-              layers = props.get('cloudLayers', [])
-              amounts = {'CLR':0,'SKC':0,'FEW':12,'SCT':37,'BKN':68,'OVC':95}
-              if layers:
-                  max_cover = max(amounts.get(l.get('amount',''), 50) for l in layers)
-                  nws_icon = cloud_icon(max_cover)
-              desc_l = nws_desc.lower()
-              if 'thunder' in desc_l or 'storm' in desc_l: nws_icon = '⛈\uFE0F'
-              elif any(w in desc_l for w in ['rain','drizzle','shower']): nws_icon = '🌧'
-              elif any(w in desc_l for w in ['snow','sleet','ice']): nws_icon = '🌨'
-              elif 'fog' in desc_l or 'mist' in desc_l: nws_icon = '🌫'
-          except: pass
-
+          narrow = {'☀','☁','⛅','⛈'}
+          def pad(ic):
+              return ic + ' ' if ic in narrow else ic
           days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
           d = weather['daily']
@@ -112,25 +57,6 @@ jobs:
               if datetime.strptime(t, '%Y-%m-%dT%H:%M') >= now:
                   hour_idx = i
                   break
-
-          # --- Bias correction: adjust forecast cloud_cover using NWS ground truth ---
-          nws_pct = None
-          try:
-              if nws_icon and nws.get('properties', {}).get('cloudLayers'):
-                  nws_layers = nws['properties']['cloudLayers']
-                  nws_amts = {'CLR':0,'SKC':0,'FEW':12,'SCT':37,'BKN':68,'OVC':95}
-                  nws_pct = max(nws_amts.get(l.get('amount',''), 50) for l in nws_layers)
-          except: pass
-          if nws_pct is not None and h.get('cloud_cover'):
-              model_now = safe(h['cloud_cover'], hour_idx)
-              bias = model_now - nws_pct
-              if abs(bias) > 15:
-                  decay_rates = [0.90, 0.75, 0.55, 0.35, 0.15]
-                  for offset, decay in enumerate(decay_rates, 1):
-                      idx = hour_idx + offset
-                      if idx < len(h['cloud_cover']):
-                          correction = bias * decay
-                          h['cloud_cover'][idx] = max(0, min(100, round(h['cloud_cover'][idx] - correction)))
 
           # --- Canopy from Google Earth Engine Sentinel-2 ---
           ndvi_val = canopy.get('ndvi', 0)
@@ -158,6 +84,8 @@ jobs:
               if datetime.strptime(t, '%Y-%m-%dT%H:%M') >= now:
                   aq_idx = max(0, i - 1)
                   break
+          def safe(arr, idx):
+              return (arr[min(idx, len(arr)-1)] if arr else 0) or 0
           us_aqi = safe(aq_h.get('us_aqi',[]), aq_idx)
           pm25 = safe(aq_h.get('pm2_5',[]), aq_idx)
           pm10 = safe(aq_h.get('pm10',[]), aq_idx)
@@ -171,14 +99,20 @@ jobs:
 
           # --- Comfort Index (0-100) ---
           comfort = 100.0
+          # Temperature: ideal feels-like 62-75F
           if feels < 62: comfort -= min(30, (62 - feels) * 1.5)
           elif feels > 75: comfort -= min(30, (feels - 75) * 2)
+          # Humidity: ideal 35-60%
           if humidity < 35: comfort -= min(12, (35 - humidity) * 0.6)
           elif humidity > 60: comfort -= min(15, (humidity - 60) * 0.5)
+          # Wind: ideal 2-12 mph
           if wind > 12: comfort -= min(12, (wind - 12) * 1.2)
           elif wind < 2: comfort -= 3
+          # AQI penalty
           comfort -= min(25, us_aqi * 0.2)
+          # UV penalty (>6 is harsh)
           if uv > 6: comfort -= min(10, (uv - 6) * 2)
+          # NDVI bonus: green surroundings boost comfort
           if ndvi_val > 0: comfort += min(5, ndvi_val * 8)
           comfort = max(0, min(100, round(comfort)))
           if comfort >= 80: c_dot = '🟢'
@@ -186,66 +120,39 @@ jobs:
           elif comfort >= 40: c_dot = '🟠'
           else: c_dot = '🔴'
 
-          # Line 1: remaining daylight + 🌙 + tomorrow daytime + comfort
-          dt_now = datetime.strptime(h['time'][hour_idx], '%Y-%m-%dT%H:%M')
-          hr = dt_now.strftime('%I%p').lstrip('0').rstrip('M').lower()
-          sunset_str = d.get('sunset',[''])[0]
-          sunset_dt = datetime.strptime(sunset_str, '%Y-%m-%dT%H:%M') if sunset_str else None
-          today_ic = []
+          # Line 1: hourly forecast + comfort index
+          parts = []
           for i in range(hour_idx, min(hour_idx + 8, len(h['time']))):
-              dt_h = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
-              if sunset_dt and dt_h >= sunset_dt:
-                  break
-              ic = nws_icon if (i == hour_idx and nws_icon) else get_icon(i)
-              today_ic.append(ic)
-          tmrw = d['time'][1]
-          tmrw_hrs = [8, 10, 12, 14, 16]
-          max_t = max(3, 9 - len(today_ic))
-          tmrw_ic = []
-          for j, t in enumerate(h['time']):
-              dt_j = datetime.strptime(t, '%Y-%m-%dT%H:%M')
-              if dt_j.strftime('%Y-%m-%d') == tmrw and dt_j.hour in tmrw_hrs:
-                  tmrw_ic.append(get_icon(j))
-                  if len(tmrw_ic) >= max_t:
-                      break
-          strip = ''.join(today_ic) + '🌙' + ''.join(tmrw_ic)
-          print(f'{hr} {strip} 🍃{c_dot}{comfort}')
+              dt = datetime.strptime(h['time'][i], '%Y-%m-%dT%H:%M')
+              hr = dt.strftime('%I%p').lstrip('0').rstrip('M').lower()
+              ic = icons.get(h['weather_code'][i], '?')
+              parts.append(f'{hr}{ic}')
+          hourly_line = ' '.join(parts)
+          print(f'{hourly_line}  🍃{c_dot}{comfort}')
 
-          # Lines 2-5: 4 daytime icons + hi/lo temp
+          # Lines 2-5: daily with spaced icons
           def day_icons(day_str):
-              sample = [9, 12, 15, 17]
+              sample = [6, 9, 12, 15, 18, 21]
               r = []
               for j, t in enumerate(h['time']):
                   dt = datetime.strptime(t, '%Y-%m-%dT%H:%M')
                   if dt.strftime('%Y-%m-%d') == day_str and dt.hour in sample:
-                      r.append(get_icon(j))
+                      r.append(pad(icons.get(h['weather_code'][j], '☁')))
               return ' '.join(r)
 
           prev_hi = round(d['temperature_2m_max'][0])
-          shown_moon = set()
-          day_lines = []
           for i in range(1, 5):
               dt = datetime.strptime(d['time'][i], '%Y-%m-%d')
               day = days[dt.weekday()]
               hi_t = round(d['temperature_2m_max'][i])
-              lo_t = round(d['temperature_2m_min'][i])
               hourly = day_icons(d['time'][i])
               rain = d['precipitation_probability_max'][i] or 0
               delta_t = hi_t - prev_hi
-              moon = moon_phase(d['time'][i])
-              indicator = ''
-              if moon and moon not in shown_moon:
-                  indicator = moon
-                  shown_moon.add(moon)
-              elif delta_t <= -5: indicator = '🔻'
-              elif rain >= 50: indicator = '🌊'
-              content = f'{day} {hi_t}/{lo_t}° {hourly}'
-              day_lines.append((content, indicator))
+              alert = ''
+              if delta_t <= -5: alert = ' 🔻'
+              elif rain >= 50: alert = ' 🌊'
+              print(f'{day} {hi_t:>2}° {hourly}{alert}')
               prev_hi = hi_t
-          max_cw = max(vw(c) for c, _ in day_lines)
-          for content, indicator in day_lines:
-              pad_n = max(1, max_cw + 1 - vw(content))
-              print(content + ' ' * pad_n + indicator)
 
           # Lines below fold (hidden from pinned preview)
           print()
@@ -263,23 +170,7 @@ jobs:
           print(f'💨 AQI {us_aqi} | PM2.5 {round(pm25)} | PM10 {round(pm10)} ug/m3')
           print(f'🌡 Feels {round(feels)}° | UV {round(uv,1)}/{round(uv_max,1)} | ☀ {sunrise}-{sunset}')
           print(f'💧 Hum {round(humidity)}% | Wind {round(wind)} mph')
-          # Ground vs Model cloud cover comparison
-          model_cc = safe(h.get('cloud_cover', []), hour_idx)
-          model_ic = cloud_icon(model_cc)
-          if nws_desc:
-              # Extract NWS cloud % from layers
-              try:
-                  nws_layers = nws.get('properties', {}).get('cloudLayers', [])
-                  nws_amts = {'CLR':0,'SKC':0,'FEW':12,'SCT':37,'BKN':68,'OVC':95}
-                  nws_pct = max(nws_amts.get(l.get('amount',''), 50) for l in nws_layers) if nws_layers else 0
-              except: nws_pct = 0
-              nws_ic = cloud_icon(nws_pct)
-              diff = abs(model_cc - nws_pct)
-              match = '✓' if diff <= 20 else '✗'
-              print(f'📡 KPAO: {nws_desc} ({nws_pct}%){nws_ic} vs Mdl: {model_cc}%{model_ic} {match}')
-          else:
-              print(f'📡 NWS: unavail | Mdl: {model_cc}%{model_ic}')
-          " "$WEATHER_DATA" "$AQI_DATA" "$NDVI_DATA" "$NWS_DATA")
+          " "$WEATHER_DATA" "$AQI_DATA" "$NDVI_DATA")
 
           for i in 1 2 3; do
             gh gist edit "$GIST_ID" -f "aircloudy" - <<< "$WEATHER" && break
