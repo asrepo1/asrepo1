@@ -1,21 +1,21 @@
 """Generate GeoJSON cloud cover map from ECMWF IFS via Open-Meteo.
 
-Queries cloud cover at a 6x6 grid over the Bay Area, generates GeoJSON
-with semi-transparent white polygons representing cloud density plus
-weather station markers with live conditions.
+Queries cloud cover at a 6x6 grid over the Bay Area, scrapes live
+Stanford weather station data, and generates GeoJSON with cloud
+density polygons + station markers.
 
-Uses ECMWF IFS 0.25° (9km) — the gold standard NWP model.
-Falls back to best_match if IFS is unavailable.
+Uses ECMWF IFS 0.25 (9km) for cloud grid.
+Stanford weather stations update every 15 minutes.
 
 Outputs GeoJSON to stdout.
 """
 import json
+import re
 import sys
 import urllib.request
 from datetime import datetime
 
 # Bay Area bounding box for cloud cover grid
-# ~80km x 80km centered on Palo Alto
 GRID_LAT_MIN = 37.25
 GRID_LAT_MAX = 37.65
 GRID_LON_MIN = -122.55
@@ -27,13 +27,13 @@ GRID_COLS = 6
 HOME_LAT = 37.4419
 HOME_LON = -122.1430
 
-# Weather stations (METAR)
-STATIONS = [
-    {"name": "KPAO", "label": "Palo Alto Airport", "lat": 37.461, "lon": -122.115, "color": "#2196F3", "symbol": "airport"},
-    {"name": "KNUQ", "label": "Moffett Field (NASA)", "lat": 37.4161, "lon": -122.0496, "color": "#2196F3", "symbol": "airport"},
-    {"name": "KSQL", "label": "San Carlos Airport", "lat": 37.5122, "lon": -122.2508, "color": "#2196F3", "symbol": "airport"},
-    {"name": "KSFO", "label": "San Francisco Intl", "lat": 37.6213, "lon": -122.3750, "color": "#9C27B0", "symbol": "airport"},
-    {"name": "KSJC", "label": "San Jose Intl", "lat": 37.3626, "lon": -121.9289, "color": "#9C27B0", "symbol": "airport"},
+# METAR stations
+METAR_STATIONS = [
+    {"name": "KPAO", "label": "Palo Alto Airport", "lat": 37.461, "lon": -122.115, "color": "#2196F3"},
+    {"name": "KNUQ", "label": "Moffett Field (NASA)", "lat": 37.4161, "lon": -122.0496, "color": "#2196F3"},
+    {"name": "KSQL", "label": "San Carlos Airport", "lat": 37.5122, "lon": -122.2508, "color": "#2196F3"},
+    {"name": "KSFO", "label": "San Francisco Intl", "lat": 37.6213, "lon": -122.3750, "color": "#9C27B0"},
+    {"name": "KSJC", "label": "San Jose Intl", "lat": 37.3626, "lon": -121.9289, "color": "#9C27B0"},
 ]
 
 
@@ -43,14 +43,12 @@ def fetch_cloud_grid():
     lon_step = (GRID_LON_MAX - GRID_LON_MIN) / GRID_COLS
 
     grid_data = []
-
     for r in range(GRID_ROWS):
         for c in range(GRID_COLS):
             lat = GRID_LAT_MIN + (r + 0.5) * lat_step
             lon = GRID_LON_MIN + (c + 0.5) * lon_step
             grid_data.append({"lat": lat, "lon": lon, "row": r, "col": c})
 
-    # Batch fetch - Open-Meteo supports comma-separated coordinates
     lats = ",".join(f"{p['lat']:.4f}" for p in grid_data)
     lons = ",".join(f"{p['lon']:.4f}" for p in grid_data)
 
@@ -69,101 +67,107 @@ def fetch_cloud_grid():
             data = json.loads(resp.read())
     except Exception as e:
         print(f"Warning: cloud cover fetch failed: {e}", file=sys.stderr)
-        return grid_data  # return grid with no cloud data
+        return grid_data
 
     now = datetime.now()
-
-    # Open-Meteo returns array of results for multiple coords
-    if isinstance(data, list):
-        results = data
-    else:
-        results = [data]
+    results = data if isinstance(data, list) else [data]
 
     for i, point in enumerate(grid_data):
         if i >= len(results):
             point["cloud_cover"] = 0
             continue
-        result = results[i]
-        hourly = result.get("hourly", {})
+        hourly = results[i].get("hourly", {})
         times = hourly.get("time", [])
         cc = hourly.get("cloud_cover", [])
-
-        # Find current hour
         hour_idx = 0
         for j, t in enumerate(times):
             if datetime.strptime(t, "%Y-%m-%dT%H:%M") >= now:
                 hour_idx = max(0, j - 1)
                 break
-
         val = cc[hour_idx] if hour_idx < len(cc) else None
         point["cloud_cover"] = val if val is not None else 0
 
     return grid_data
 
 
-def fetch_station_conditions():
-    """Fetch current conditions at home point for station descriptions."""
-    url = (
-        f"https://api.open-meteo.com/v1/forecast?"
-        f"latitude={HOME_LAT}&longitude={HOME_LON}"
-        f"&hourly=temperature_2m,cloud_cover,wind_speed_10m"
-        f"&temperature_unit=fahrenheit&wind_speed_unit=mph"
-        f"&timezone=America/Los_Angeles"
-        f"&forecast_days=1"
-    )
+def fetch_stanford_weather():
+    """Scrape live data from Stanford weather stations (updates every 15 min)."""
+    url = "https://stanford.westernweathergroup.com/"
     try:
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read())
-        now = datetime.now()
-        hourly = data.get("hourly", {})
-        times = hourly.get("time", [])
-        hour_idx = 0
-        for j, t in enumerate(times):
-            if datetime.strptime(t, "%Y-%m-%dT%H:%M") >= now:
-                hour_idx = max(0, j - 1)
-                break
-        temp = hourly.get("temperature_2m", [None])[hour_idx]
-        cc = hourly.get("cloud_cover", [None])[hour_idx]
-        wind = hourly.get("wind_speed_10m", [None])[hour_idx]
-        return {
-            "temp": round(temp) if temp is not None else "?",
-            "cloud_cover": round(cc) if cc is not None else "?",
-            "wind": round(wind) if wind is not None else "?",
-        }
-    except Exception:
-        return {"temp": 0, "cloud_cover": 0, "wind": 0}
+            html = resp.read().decode("utf-8", errors="replace")
+    except Exception as e:
+        print(f"Warning: Stanford weather fetch failed: {e}", file=sys.stderr)
+        return None
+
+    # Split HTML by station sections and parse each
+    met_idx = html.find("Met Tower")
+    rwc_idx = html.find("Redwood City")
+    if met_idx < 0:
+        return None
+
+    met_html = html[met_idx:rwc_idx] if rwc_idx > met_idx else html[met_idx:]
+    rwc_html = html[rwc_idx:] if rwc_idx > 0 else ""
+
+    def parse_rows(section):
+        d = {}
+        for label, val in re.findall(r'<th>([^<]+)</th>\s*<td[^>]*>\s*([\d.]+)', section):
+            d[label.strip()] = val
+        return d
+
+    met = parse_rows(met_html)
+    rwc = parse_rows(rwc_html) if rwc_html else {}
+
+    # Parse timestamp
+    ts_match = re.search(r'(\d+/\d+/\d+\s+\d+:\d+\s*[AP]M)', html)
+    timestamp = ts_match.group(1) if ts_match else ""
+
+    return {
+        "met_tower": {
+            "temp": met.get("Temp", "?"),
+            "rh": met.get("RH", "?"),
+            "wind": met.get("Wind Spd", "?"),
+            "gust": met.get("Wind Gust", "?"),
+            "aqi": met.get("NowCast AQI Value", "?"),
+            "precip_24h": met.get("Precip 24Hr", "?"),
+            "season_precip": met.get("Season Precip", "?"),
+        },
+        "redwood_city": {
+            "temp": rwc.get("Temp", "?"),
+            "rh": rwc.get("RH", "?"),
+            "wind": rwc.get("Wind Spd", "?"),
+            "gust": rwc.get("Wind Gust", "?"),
+            "aqi": rwc.get("NowCast AQI Value", "?"),
+            "precip_24h": rwc.get("Precip 24Hr", "?"),
+            "season_precip": rwc.get("Season Precip", "?"),
+        },
+        "timestamp": timestamp,
+    }
 
 
-def build_geojson(grid_data, conditions):
-    """Build GeoJSON FeatureCollection with cloud polygons + station markers."""
+def build_geojson(grid_data, stanford):
+    """Build GeoJSON FeatureCollection."""
     lat_step = (GRID_LAT_MAX - GRID_LAT_MIN) / GRID_ROWS
     lon_step = (GRID_LON_MAX - GRID_LON_MIN) / GRID_COLS
-
     features = []
 
     # Cloud cover grid polygons
     for point in grid_data:
         cc = point.get("cloud_cover", 0) or 0
         if cc < 5:
-            continue  # skip clear cells
-
+            continue
         lat = point["lat"]
         lon = point["lon"]
         half_lat = lat_step / 2
         half_lon = lon_step / 2
-
-        # Opacity scales with cloud cover: 5% → 0.03, 100% → 0.45
         opacity = round(0.03 + (cc / 100) * 0.42, 2)
-
-        # Color: thin clouds white, thick clouds gray
         if cc >= 80:
             fill = "#9E9E9E"
         elif cc >= 50:
             fill = "#BDBDBD"
         else:
             fill = "#E0E0E0"
-
         features.append({
             "type": "Feature",
             "geometry": {
@@ -183,14 +187,50 @@ def build_geojson(grid_data, conditions):
                 "fill": fill,
                 "fill-opacity": opacity,
                 "title": f"{cc}% cloud cover",
-                "description": f"ECMWF IFS 0.25 forecast / {lat:.2f}N {abs(lon):.2f}W"
+                "description": f"ECMWF IFS 0.25 / {lat:.2f}N {abs(lon):.2f}W"
             }
         })
 
-    # Home marker
-    temp = conditions.get("temp", "?")
-    cc_home = conditions.get("cloud_cover", "?")
-    wind = conditions.get("wind", "?")
+    # Stanford Met Tower (live, 15-min updates)
+    if stanford:
+        mt = stanford["met_tower"]
+        ts = stanford["timestamp"]
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [-122.1720, 37.4275]},
+            "properties": {
+                "marker-color": "#8B0000",
+                "marker-size": "large",
+                "marker-symbol": "college",
+                "title": f"Stanford Met Tower - {mt['temp']}F",
+                "description": (
+                    f"RH {mt['rh']}% / Wind {mt['wind']} mph "
+                    f"(gust {mt['gust']}) / AQI {mt['aqi']} / "
+                    f"Rain 24h {mt['precip_24h']}in / "
+                    f"Season {mt['season_precip']}in / {ts}"
+                )
+            }
+        })
+
+        rc = stanford["redwood_city"]
+        features.append({
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [-122.2150, 37.4850]},
+            "properties": {
+                "marker-color": "#8B0000",
+                "marker-size": "medium",
+                "marker-symbol": "college",
+                "title": f"Stanford Redwood City - {rc['temp']}F",
+                "description": (
+                    f"RH {rc['rh']}% / Wind {rc['wind']} mph "
+                    f"(gust {rc['gust']}) / AQI {rc['aqi']} / "
+                    f"Rain 24h {rc['precip_24h']}in / "
+                    f"Season {rc['season_precip']}in / {ts}"
+                )
+            }
+        })
+
+    # Palo Alto marker
     features.append({
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [HOME_LON, HOME_LAT]},
@@ -198,50 +238,24 @@ def build_geojson(grid_data, conditions):
             "marker-color": "#ff4444",
             "marker-size": "large",
             "marker-symbol": "star",
-            "title": f"Palo Alto - {temp}F",
-            "description": f"Cloud {cc_home}% / Wind {wind} mph / ECMWF IFS"
+            "title": "Palo Alto",
+            "description": "ECMWF IFS forecast point"
         }
     })
 
-    # Station markers
-    for s in STATIONS:
+    # METAR stations
+    for s in METAR_STATIONS:
         features.append({
             "type": "Feature",
             "geometry": {"type": "Point", "coordinates": [s["lon"], s["lat"]]},
             "properties": {
                 "marker-color": s["color"],
                 "marker-size": "medium",
-                "marker-symbol": s["symbol"],
+                "marker-symbol": "airport",
                 "title": f"{s['name']} - {s['label']}",
                 "description": "METAR station / surface observations"
             }
         })
-
-    # NDVI sample point
-    features.append({
-        "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": [-122.1030, 37.3861]},
-        "properties": {
-            "marker-color": "#4CAF50",
-            "marker-size": "small",
-            "marker-symbol": "garden",
-            "title": "NDVI Sample",
-            "description": "Sentinel-2 vegetation index / 10m resolution"
-        }
-    })
-
-    # AQI monitor
-    features.append({
-        "type": "Feature",
-        "geometry": {"type": "Point", "coordinates": [-122.1097, 37.4148]},
-        "properties": {
-            "marker-color": "#607D8B",
-            "marker-size": "small",
-            "marker-symbol": "marker",
-            "title": "AQI Monitor",
-            "description": "Open-Meteo Air Quality / PM2.5 + PM10"
-        }
-    })
 
     # Forecast grid outline
     features.append({
@@ -267,16 +281,13 @@ def build_geojson(grid_data, conditions):
         }
     })
 
-    return {
-        "type": "FeatureCollection",
-        "features": features
-    }
+    return {"type": "FeatureCollection", "features": features}
 
 
 def main():
     grid = fetch_cloud_grid()
-    conditions = fetch_station_conditions()
-    geojson = build_geojson(grid, conditions)
+    stanford = fetch_stanford_weather()
+    geojson = build_geojson(grid, stanford)
     print(json.dumps(geojson, indent=2))
 
 
