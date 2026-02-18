@@ -263,7 +263,16 @@ jobs:
           print(f'💧 Hum {round(humidity)}% | Wind {round(wind)} mph')
           " "$WEATHER_DATA" "$AQI_DATA" "$NDVI_DATA")
 
+          # Generate cloud cover GeoJSON map
+          GEOJSON=$(python3 .github/scripts/cloud_cover.py 2>/dev/null || echo '{"type":"FeatureCollection","features":[]}')
+
+          # Update gist: weather text + cloud cover map
           for i in 1 2 3; do
             gh gist edit "$GIST_ID" -f "aircloudy" - <<< "$WEATHER" && break
             echo "Retry $i..." && sleep 5
+          done
+
+          for i in 1 2 3; do
+            echo "$GEOJSON" | gh gist edit "$GIST_ID" -f "paloalto.geojson" - && break
+            echo "Retry geojson $i..." && sleep 5
           done
