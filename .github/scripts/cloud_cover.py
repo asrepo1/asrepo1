@@ -182,8 +182,8 @@ def build_geojson(grid_data, conditions):
                 "stroke-opacity": 0,
                 "fill": fill,
                 "fill-opacity": opacity,
-                "title": f"☁️ {cc}% cloud cover",
-                "description": f"ECMWF IFS 0.25° forecast · {lat:.2f}°N {abs(lon):.2f}°W"
+                "title": f"{cc}% cloud cover",
+                "description": f"ECMWF IFS 0.25 forecast / {lat:.2f}N {abs(lon):.2f}W"
             }
         })
 
@@ -198,8 +198,8 @@ def build_geojson(grid_data, conditions):
             "marker-color": "#ff4444",
             "marker-size": "large",
             "marker-symbol": "star",
-            "title": f"📍 Home — {temp}°F",
-            "description": f"Cloud {cc_home}% · Wind {wind} mph · ECMWF IFS"
+            "title": f"Home - {temp}F",
+            "description": f"Cloud {cc_home}% / Wind {wind} mph / ECMWF IFS"
         }
     })
 
@@ -212,8 +212,8 @@ def build_geojson(grid_data, conditions):
                 "marker-color": s["color"],
                 "marker-size": "medium",
                 "marker-symbol": s["symbol"],
-                "title": f"{s['name']} — {s['label']}",
-                "description": "METAR station · surface observations"
+                "title": f"{s['name']} - {s['label']}",
+                "description": "METAR station / surface observations"
             }
         })
 
@@ -225,8 +225,8 @@ def build_geojson(grid_data, conditions):
             "marker-color": "#4CAF50",
             "marker-size": "small",
             "marker-symbol": "garden",
-            "title": "🛰 NDVI Sample",
-            "description": "Sentinel-2 vegetation index · 10m resolution"
+            "title": "NDVI Sample",
+            "description": "Sentinel-2 vegetation index / 10m resolution"
         }
     })
 
@@ -238,8 +238,8 @@ def build_geojson(grid_data, conditions):
             "marker-color": "#607D8B",
             "marker-size": "small",
             "marker-symbol": "marker",
-            "title": "💨 AQI Monitor",
-            "description": "Open-Meteo Air Quality · PM2.5 + PM10"
+            "title": "AQI Monitor",
+            "description": "Open-Meteo Air Quality / PM2.5 + PM10"
         }
     })
 
@@ -263,15 +263,12 @@ def build_geojson(grid_data, conditions):
             "fill": "#ff4444",
             "fill-opacity": 0.02,
             "title": "ECMWF IFS Grid",
-            "description": "25km resolution forecast area"
+            "description": "25km resolution / forecast area"
         }
     })
 
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M PT")
     return {
         "type": "FeatureCollection",
-        "_updated": now_str,
-        "_model": "ECMWF IFS 0.25°",
         "features": features
     }
 
