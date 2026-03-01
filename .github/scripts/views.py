@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Accumulate GitHub profile repo traffic views into a shields.io endpoint gist."""
-import json, os, requests
+"""Accumulate GitHub profile repo traffic views into a shields.io endpoint gist + update README."""
+import json, os, re, requests
+from datetime import datetime, timezone
 
 REPO = "areporeporepo/areporeporepo"
 GIST_ID = os.environ["VIEWS_GIST_ID"]
@@ -49,3 +50,30 @@ requests.patch(
 print(f"unique={total_u} delta_u={delta_u}")
 print(f"referrers: {ref_lines}")
 print(f"paths: {path_lines}")
+
+# --- Update README with analytics ---
+readme_path = os.path.join(os.environ.get("GITHUB_WORKSPACE", "."), "README.md")
+with open(readme_path) as f:
+    readme = f.read()
+
+now = datetime.now(timezone.utc).strftime("%b %d")
+top_ref = referrers[0]["referrer"] if referrers else None
+top_ref_count = referrers[0]["uniques"] if referrers else 0
+
+lines = []
+lines.append(f"`{total_u} visitors`")
+if top_ref:
+    lines.append(f"`via {top_ref}`")
+lines.append(f"`as of {now}`")
+
+analytics_block = " · ".join(lines)
+
+readme = re.sub(
+    r"<!-- analytics:start -->.*?<!-- analytics:end -->",
+    f"<!-- analytics:start -->\n{analytics_block}\n<!-- analytics:end -->",
+    readme, flags=re.DOTALL,
+)
+
+with open(readme_path, "w") as f:
+    f.write(readme)
+print(f"README updated: {analytics_block}")
