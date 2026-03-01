@@ -4,18 +4,16 @@ import json, os, requests
 
 REPO = "areporeporepo/areporeporepo"
 GIST_ID = os.environ["VIEWS_GIST_ID"]
-GIST_TOKEN = os.environ["GH_GIST_TOKEN"]
-REPO_TOKEN = os.environ.get("GITHUB_TOKEN", GIST_TOKEN)
-gist_h = {"Authorization": f"token {GIST_TOKEN}", "Accept": "application/vnd.github+json"}
-repo_h = {"Authorization": f"token {REPO_TOKEN}", "Accept": "application/vnd.github+json"}
+TOKEN = os.environ["GH_GIST_TOKEN"]
+headers = {"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github+json"}
 
 # Get current count from gist
-gist = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=gist_h).json()
+gist = requests.get(f"https://api.github.com/gists/{GIST_ID}", headers=headers).json()
 current = json.loads(gist["files"]["views.json"]["content"])
 total = int(current["message"])
 
 # Get 14-day traffic from GitHub (needs repo scope)
-traffic = requests.get(f"https://api.github.com/repos/{REPO}/traffic/views", headers=repo_h).json()
+traffic = requests.get(f"https://api.github.com/repos/{REPO}/traffic/views", headers=headers).json()
 new_views = traffic.get("count", 0)
 new_uniques = traffic.get("uniques", 0)
 
@@ -40,7 +38,7 @@ payload = {
 }
 requests.patch(
     f"https://api.github.com/gists/{GIST_ID}",
-    headers=gist_h,
+    headers=headers,
     json={"files": {"views.json": {"content": json.dumps(payload)}}},
 )
 print(f"total={total} unique={total_u} delta={delta} delta_u={delta_u}")
