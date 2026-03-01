@@ -1,6 +1,6 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Sunday at 3
+Hi.
 
 UCLA 2019 · NBIO 206, NBIO 220
 
