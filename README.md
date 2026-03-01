@@ -1,26 +1,19 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Good morning, Sunday — someone in Palo Alto keeps coming back today.
+Good morning, Sunday — interesting week; picked up follows from ex-FAANG AI founders and a 9k-follower engineer.
 
-## Now
+**SKILLS** — EEG signal processing, motor imagery decoding, brain-computer interfaces · Python, PyTorch, MNE-Python · Three.js, TypeScript, Rust, Go
 
-BCI research: decoding motor imagery from EEG (NBIO 206/220, Winter 2026). Building things that sit between brains, GPUs, and browsers.
+**PROJECTS**
+- **OpenEyes1** — open-source NASA Eyes-style solar system visualization (Three.js + astronomy-engine)
+- **Agent Space** — 3D globe with AI chat on HuggingFace (CesiumJS + FastAPI + Qwen 72B)
+- **NVIDIA Atlas** — GPU weather forecasting on Modal (4.3B param model, A100)
+- **BCI Research** — EEG motor imagery decoding pipeline
 
-## Skills
+**NOW** — Winter 2026 coursework: NBIO 206, NBIO 220. Building at the intersection of neuroscience and compute.
 
-Python · PyTorch · MNE-Python · TypeScript · Three.js · Rust · Go · EEG signal processing · brain-computer interfaces
-
-## Projects
-
-**OpenEyes1** — open-source NASA Eyes-style solar system visualization (Three.js + astronomy-engine)
-**Agent Space** — 3D globe with AI chat, CesiumJS + FastAPI + Qwen 72B on HuggingFace
-**NVIDIA Atlas** — GPU weather forecasting on Modal, 4.3B param model on A100
-**BCI Research** — motor imagery decoding from EEG, classification pipeline in PyTorch + MNE
-
-## Education
-
-UCLA, 2019
+**EDUCATION** — UCLA, 2019
 
 [Globe](https://huggingface.co/spaces/anhnq/agent) · [Endorphin](https://www.icloud.com/sharedalbum/#B26GWZuqDe1JNh)
 
-<sub>visitor #23 · 23 today · Sunday</sub>
+<sub>visitor #27 · 27 today · Sunday</sub>
