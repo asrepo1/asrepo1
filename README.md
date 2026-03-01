@@ -1,6 +1,6 @@
 \![](https://profile-badge.testa.workers.dev)
 
-GraphQL bench run 3
+REST bench run 1
 
 UCLA 2019 · NBIO 206, NBIO 220
 
