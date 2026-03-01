@@ -1,6 +1,6 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Good Sunday, 15:00 PST
+Hi there.
 
 UCLA 2019 · NBIO 206, NBIO 220
 
