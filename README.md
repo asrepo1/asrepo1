@@ -1,6 +1,6 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Hi there.
+Good Sunday afternoon
 
 UCLA 2019 · NBIO 206, NBIO 220
 
