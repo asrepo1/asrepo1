@@ -11,4 +11,5 @@ jobs:
       - run: python .github/scripts/views.py
         env:
           GH_GIST_TOKEN: ${{ secrets.GH_GIST_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VIEWS_GIST_ID: ${{ secrets.VIEWS_GIST_ID }}
