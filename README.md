@@ -1,6 +1,7 @@
 <!-- profile:start -->
-## Anh Nguyen
+![](https://profile-badge.testa.workers.dev)
 
+<<<<<<< Updated upstream
 Location: Palo Alto, CA  
 Education: UCLA, 2019  
 Current Coursework: NBIO 206, NBIO 220 (Winter 2026)
@@ -21,4 +22,7 @@ Fusion energy, neuroscience, semiconductors (TSMC/NVIDIA), national labs
 [Globe](https://huggingface.co/spaces/anhnq/agent) · [Endorphin](https://www.icloud.com/sharedalbum/#B26GWZuqDe1JNh)
 
 <sub>6 visitors · github.com · Mar 01, 2026</sub>
+=======
+[Globe](https://huggingface.co/spaces/anhnq/agent) · [Endorphin](https://www.icloud.com/sharedalbum/#B26GWZuqDe1JNh)
+>>>>>>> Stashed changes
 <!-- profile:end -->
