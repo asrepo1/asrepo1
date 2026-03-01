@@ -29,7 +29,7 @@ total_u = int(current.get("_total_u", 0)) + delta_u
 payload = {
     "schemaVersion": 1,
     "label": "views",
-    "message": f"{total} · {total_u} unique",
+    "message": str(total_u),
     "color": "grey",
     "style": "flat",
     "_last": new_views,
