@@ -1,8 +1,8 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Sunday, let's discuss
+Sunday, 2pm PST
 
 UCLA 2019 · NBIO 206, NBIO 220
 
 [Globe](https://huggingface.co/spaces/anhnq/agent) · [Endorphin](https://www.icloud.com/sharedalbum/#B26GWZuqDe1JNh)
-<sub>visitor #159 · 159 today · Sunday</sub>
+<sub>visitor #164 · 164 today · Sunday</sub>
