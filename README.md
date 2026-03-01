@@ -1,22 +1,21 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Good morning, Sunday — welcome back, Palo Alto.
+Good morning, Sunday — someone in Palo Alto is poking around.
 
-## Building
+## Now
 
-**OpenEyes1** — open-source NASA Eyes-style solar system visualization (Three.js, astronomy-engine)
-**NVIDIA Atlas** — GPU weather forecasting on Modal (4.3B param model, A100)
-**Agent Space** — 3D globe + AI chat (CesiumJS, FastAPI, Qwen 72B)
-**BCI Research** — EEG motor imagery decoding with deep learning
+BCI research: motor imagery decoding from EEG (NBIO 206/220, Winter 2026). Building toward closed-loop neural interfaces.
 
-## Stack
+## Skills
 
-Python · PyTorch · MNE-Python · TypeScript · Three.js · Rust · Go
+Python, PyTorch, MNE-Python, Rust, Go, TypeScript, Three.js, CesiumJS · EEG signal processing, brain-computer interfaces, GPU-scale ML
 
-## Focus
+## Projects
 
-EEG signal processing, brain-computer interfaces, motor imagery classification
-Currently: NBIO 206, NBIO 220 (Winter 2026)
+**OpenEyes1** — open-source NASA Eyes replacement. Three.js + astronomy-engine, full solar system visualization.
+**NVIDIA Atlas** — 4.3B-param GPU weather forecasting on Modal (A100). Operational NWP at research scale.
+**Agent Space** — 3D globe + AI chat. CesiumJS, FastAPI, Qwen 72B. Live on HuggingFace.
+**BCI Motor Imagery** — EEG decoding pipeline for imagined movement classification.
 
 ## Education
 
@@ -24,4 +23,4 @@ UCLA, 2019
 
 [Globe](https://huggingface.co/spaces/anhnq/agent) · [Endorphin](https://www.icloud.com/sharedalbum/#B26GWZuqDe1JNh)
 
-<sub>visitor #19 · 19 today · Sunday</sub>
+<sub>visitor #20 · 20 today · Sunday</sub>
