@@ -1,20 +1,22 @@
 ![](https://profile-badge.testa.workers.dev)
 
-Good morning! Sunday's here, and it looks like the GitHub community is active.
+Good morning, Sunday — building through the quiet hours.
 
-## SKILLS
-EEG signal processing, brain-computer interfaces, motor imagery decoding
-Python, PyTorch, MNE-Python, Three.js, TypeScript, Rust, Go
+**Currently:** BCI research — EEG motor imagery decoding with MNE-Python + PyTorch. Coursework in NBIO 206/220 (Winter 2026).
 
-## PROJECTS
-* OpenEyes1: NASA Eyes solar system visualization
-* Agent Space: 3D globe + AI chat
-* NVIDIA Atlas: GPU weather forecasting
-* BCI Research: EEG motor imagery decoding
+**Projects**
 
-## EDUCATION
-UCLA, 2019
-Current coursework: NBIO 206, NBIO 220
+**OpenEyes1** — Open-source NASA Eyes solar system visualization. Three.js + astronomy-engine.
+**Agent Space** — 3D globe with AI chat. CesiumJS + FastAPI + Qwen 72B on HuggingFace.
+**NVIDIA Atlas** — GPU weather forecasting on Modal. 4.3B param model, A100.
+**BCI Motor Imagery** — EEG signal processing and classification for brain-computer interfaces.
+
+**Skills:** Python, PyTorch, MNE-Python, TypeScript, Three.js, CesiumJS, Rust, Go
+
+**Education:** UCLA '19
+
+**Now exploring:** E2E testing infrastructure (Playwright), autonomous agent tooling
 
 [Globe](https://huggingface.co/spaces/anhnq/agent) · [Endorphin](https://www.icloud.com/sharedalbum/#B26GWZuqDe1JNh)
-<sub>visitor #11 · 11 today · Sunday</sub>
+
+<sub>visitor #17 · 17 today · Sunday</sub>
