@@ -46,6 +46,6 @@ requests.patch(
         "popular.md": {"content": "# Popular Content (14-day)\n\n" + ("\n".join(path_lines) or "No data yet")},
     }},
 )
-print(f"total={total} unique={total_u} delta={delta} delta_u={delta_u}")
+print(f"unique={total_u} delta_u={delta_u}")
 print(f"referrers: {ref_lines}")
 print(f"paths: {path_lines}")
