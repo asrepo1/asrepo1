@@ -13,25 +13,25 @@
 
 ## Verifiable Data — GitHub Stars & App Store Ratings (March 4, 2026)
 
-### Terminal Multiplexers (GitHub)
+### Terminal Tools (GitHub) — Actively Maintained in 2026
 
-| Project | Stars | Forks | Language | Created | Last Push |
-|---------|------:|------:|----------|---------|-----------|
-| [ghostty-org/ghostty](https://github.com/ghostty-org/ghostty) | 45,399 | 1,789 | Zig | 2022-03 | 2026-03-04 |
-| [tmux/tmux](https://github.com/tmux/tmux) | 42,543 | 2,451 | C | 2015-06 | 2026-03-04 |
-| [zellij-org/zellij](https://github.com/zellij-org/zellij) | 29,631 | 1,003 | Rust | 2020-09 | 2026-03-04 |
-| [wezterm/wezterm](https://github.com/wezterm/wezterm) | 24,643 | 1,233 | Rust | 2018-02 | 2026-03-01 |
-| [Eugeny/tabby](https://github.com/Eugeny/tabby) | 69,270 | 3,890 | TypeScript | 2016-12 | 2026-02-28 |
-| [mobile-shell/mosh](https://github.com/mobile-shell/mosh) | 13,604 | 788 | C++ | 2011-01 | 2026-02-28 |
+| Project | Stars | Forks | Language | Last Commit | 2026 Active? |
+|---------|------:|------:|----------|-------------|:------------:|
+| [ghostty-org/ghostty](https://github.com/ghostty-org/ghostty) | 45,399 | 1,789 | Zig | 2026-03-04 | **Yes** — daily commits, macOS audio bell, Xcode 26.3 |
+| [tmux/tmux](https://github.com/tmux/tmux) | 42,543 | 2,451 | C | 2026-03-04 | **Yes** — daily commits, new features (exit-on-scroll, list-keys sort) |
+| [zellij-org/zellij](https://github.com/zellij-org/zellij) | 29,631 | 1,003 | Rust | 2026-03-04 | **Yes** — Windows port landed, mobile web client, active |
+| [Eugeny/tabby](https://github.com/Eugeny/tabby) | 69,270 | 3,890 | TypeScript | 2026-02-28 | **Yes** — tabby:// URL scheme, SFTP, SSH fixes |
+| [wez/wezterm](https://github.com/wez/wezterm) | 24,643 | 1,233 | Rust | 2026-01-17 | **Slowing** — last commit Jan 17, was very active in 2025 |
+| [mobile-shell/mosh](https://github.com/mobile-shell/mosh) | 13,604 | 788 | C++ | 2026-02-28 | **Yes** — getrandom/getentropy support, CI updates |
 
-### iOS SSH Clients
+### iOS SSH Clients — Actively Maintained in 2026
 
-| App | GitHub Stars | App Store Rating | Reviews | Price |
-|-----|------------:|:----------------:|--------:|-------|
-| [Blink Shell](https://github.com/blinksh/blink) | 6,620 | 3.1/5 | N/A (rating dropped after subscription switch) | $20/yr |
-| [Moshi](https://apps.apple.com/us/app/moshi-ssh-mosh-terminal/id6757859949) | N/A (closed source) | 5.0/5 | 13 ratings | ~$10 |
-| [Termius](https://apps.apple.com/us/app/termius-modern-ssh-client/id549039908) | N/A (closed source) | 4.7/5 | 17,341 reviews | Free / $10/mo |
-| [claude-code-mobile-ssh](https://github.com/aiya000/claude-code-mobile-ssh) | 14 | N/A (PWA) | N/A | Free |
+| App | GitHub Stars | App Store Rating | Reviews | Price | 2026 Active? |
+|-----|------------:|:----------------:|--------:|-------|:------------:|
+| [Moshi](https://apps.apple.com/us/app/moshi-ssh-mosh-terminal/id6757859949) | N/A (closed) | 5.0/5 | 13 ratings | ~$10 | **Yes** — v1.4.2 (Feb 10, 2026), Tailscale SSH, file sharing |
+| [Termius](https://apps.apple.com/us/app/termius-modern-ssh-client/id549039908) | N/A (closed) | 4.7/5 | 17,341 reviews | Free / $10/mo | **Yes** — regular App Store updates |
+| [Blink Shell](https://github.com/blinksh/blink) | 6,620 | 3.1/5 | N/A | $20/yr | **No** — last GitHub commit May 2025, issues still filed but no code changes |
+| [claude-code-mobile-ssh](https://github.com/aiya000/claude-code-mobile-ssh) | 14 | N/A (PWA) | N/A | Free | **No** — last commit Jul 2025, appears abandoned |
 
 ### Homebrew Install Analytics
 
@@ -45,13 +45,13 @@
 
 ### Key Takeaways from the Data
 
-- **Ghostty** (45k stars) overtook **tmux** (42k stars) — fastest growing terminal project
-- **Tabby** has the most stars (69k) but is a general terminal emulator, not a multiplexer
-- **tmux** has far more forks (2,451) than zellij (1,003) — reflects deeper ecosystem/plugin adoption
-- **Zellij** is growing fast (29k stars in 4 years vs tmux's 42k in 10 years)
-- **Blink Shell** rating cratered to 3.1 after switching to subscriptions (was ~4.7)
-- **Moshi** is new (5.0 rating, but only 13 ratings) — still early
-- **Termius** has the most App Store social proof (17k+ reviews, 4.7 rating)
+- **All core tools (tmux, mosh, zellij, ghostty) are actively maintained** with commits in March 2026
+- **WezTerm is slowing down** — last commit Jan 17, 2026 (was daily in 2025)
+- **Blink Shell is effectively unmaintained** — no code commits since May 2025, rating at 3.1
+- **Moshi is the most actively developed iOS SSH client** — v1.4.2 shipped Feb 2026 with Tailscale support
+- **Termius has the most App Store social proof** (17k+ reviews, 4.7 rating)
+- **claude-code-mobile-ssh is dead** — 14 stars, no commits since Jul 2025
+- **Zellij is the most exciting multiplexer** — Windows port just landed, mobile web client added
 
 ---
 
