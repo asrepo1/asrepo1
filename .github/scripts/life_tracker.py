@@ -203,6 +203,12 @@ def main():
     data = read_data()
     now = datetime.now(PT)
 
+    # Log steak sandwich with Curtis at Whole Foods on 2026-03-08
+    meat = data.setdefault("meat", {"entries": [], "goal_date": None, "goal_label": None})
+    steak_entry = {"date": "2026-03-08", "item": "steak sandwich", "where": "Whole Foods", "with": "Curtis"}
+    if not any(e.get("date") == "2026-03-08" and e.get("item") == "steak sandwich" for e in meat["entries"]):
+        meat["entries"].append(steak_entry)
+
     # Auto-reset sanity checks each hour
     data.setdefault("sanity", {})
     data["sanity"]["check1"] = False
